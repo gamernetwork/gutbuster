@@ -144,3 +144,6 @@ Lossless x264:
 https://bugzilla.gnome.org/show_bug.cgi?id=725051
 http://stackoverflow.com/questions/6701805/h264-lossless-coding
 https://trac.ffmpeg.org/wiki/Encode/H.264#LosslessH.264
+
+Something about tees:
+http://gstreamer-devel.966125.n4.nabble.com/Problem-with-multiple-tees-in-pipeline-td4667937.html
