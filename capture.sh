@@ -5,7 +5,6 @@ DEVICE=0 # 0-3
 CONNECTION=sdi # or hdmi
 SHOT="Unnamed"
 BITRATE=8000
-FILENAME=EGX`date +%Y`_`date +%a_%T`_$SHOT.ts
 
 usage()
 {
@@ -54,6 +53,8 @@ do
      esac
 done
 
+FILENAME=EGX`date +%Y`_`date +%a_%T`_$SHOT.ts
+
 echo "Capturing device $DEVICE to $FILENAME"
 echo "To stop, CTRL-C in THIS WINDOW - do not just close the display"
 
@@ -64,19 +65,17 @@ gst-launch-1.0 -e \
   decklinksrc mode=8 connection=$CONNECTION device-number=$DEVICE ! \
   videoconvert ! \
   tee name=t \
-    ! \
-      queue ! \
-      videoconvert ! \
-      'video/x-raw,format=YV12,framerate=30000/1001,width=1920,height=1080' ! \
-      x264enc speed-preset=ultrafast bitrate=8000 ! \
-      mpegtsmux ! \
-      filesink location=$DIR/$FILENAME \
     t. ! \
-      queue ! \
       videoscale ! \
-      videoconvert ! \
       video/x-raw, width=320, height=180 ! \
       textoverlay font-desc="Sans Bold 24" text="$DEVICE: $SHOT" color=0xff90ff00 ! \
-      xvimagesink sync=false 
+      queue ! \
+      xvimagesink sync=false \
+    t. ! \
+      'video/x-raw,format=YV12,framerate=30000/1001,width=1920,height=1080' ! \
+      queue ! \
+      x264enc speed-preset=ultrafast bitrate=8000 ! \
+      mpegtsmux ! \
+      filesink location=$DIR/$FILENAME
 
 # note color is big endian, so 0xaaRRGGBB
