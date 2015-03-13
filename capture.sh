@@ -5,6 +5,7 @@ DEVICE=0 # 0-3
 CONNECTION=sdi # or hdmi
 SHOT="Unnamed"
 BITRATE=8000
+MODE=8
 
 usage()
 {
@@ -20,11 +21,12 @@ OPTIONS:
    -c      Connection type: 'hdmi' or 'sdi' (default sdi)
    -n      Name of this shot (default 'Unnamed')
    -l      Folder to save vids into (default pwd)
+   -m      Mode
    -b      Bitrate in Kbit/s (default 8000 = 8Mbit)
 EOF
 }
 
-while getopts “hl:d:c:n:b:” OPTION
+while getopts “hl:d:m:c:n:b:” OPTION
 do
      case $OPTION in
          h)
@@ -42,6 +44,9 @@ do
              ;;
          n)
              SHOT=$OPTARG
+             ;;
+         m)
+             MODE=$OPTARG
              ;;
          b)
              BITRATE=$OPTARG
@@ -62,7 +67,7 @@ echo "To stop, CTRL-C in THIS WINDOW - do not just close the display"
 # gst-inspect-1.0 decklinksrc
 
 gst-launch-1.0 -e \
-  decklinksrc mode=8 connection=$CONNECTION device-number=$DEVICE ! \
+  decklinkvideosrc mode=$MODE connection=$CONNECTION device-number=$DEVICE ! \
   videoconvert ! \
   tee name=t \
     t. ! \
@@ -72,10 +77,11 @@ gst-launch-1.0 -e \
       queue ! \
       xvimagesink sync=false \
     t. ! \
-      'video/x-raw,format=YV12,framerate=30000/1001,width=1920,height=1080' ! \
+      videoscale ! \
       queue ! \
       x264enc speed-preset=ultrafast bitrate=8000 ! \
       mpegtsmux ! \
       filesink location=$DIR/$FILENAME
 
+      #'video/x-raw,format=YV12,framerate=30000/1001,width=1920,height=1080' ! \
 # note color is big endian, so 0xaaRRGGBB
