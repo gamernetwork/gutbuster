@@ -5,19 +5,31 @@
 Preview:
 
 ```
-gst-launch decklinksrc mode=11 connection=hdmi subdevice=0 ! video/x-raw-yuv ! ffmpegcolorspace ! deinterlace ! xvimagesink sync=false
+gst-launch -e \
+	decklinksrc mode=11 connection=hdmi subdevice=0 \
+	! video/x-raw-yuv \
+	! ffmpegcolorspace \
+	! deinterlace \
+	! xvimagesink sync=false
 ```
 
 To encode the video to x264 in realtime:
 
 ```
-gst-launch decklinksrc mode=11 connection=hdmi ! queue ! autoconvert ! video/x-raw-yuv,framerate=30000/1001 ! x264enc tune=zerolatency speed-preset=ultrafast bitrate=8000 ! mpegtsmux ! filesink location=/tmp/vidtest/test.ts
+gst-launch -e \
+	decklinksrc mode=11 connection=hdmi \
+	! queue \
+	! autoconvert \
+	! video/x-raw-yuv,framerate=30000/1001 \
+	! x264enc tune=zerolatency speed-preset=ultrafast bitrate=8000 \
+	! mpegtsmux \
+	! filesink location=/tmp/vidtest/test.ts
 ```
 
 To tee it into capture and preview:
 
 ```
-gst-launch \
+gst-launch -e \
 	decklinksrc mode=11 connection=hdmi ! \
 	autoconvert ! \
 	video/x-raw-yuv,framerate=30000/1001,width=1920,height=1080 ! \
@@ -57,11 +69,44 @@ Notes:
 	- x264enc operates in YV12 which is a 'planar' format 
 
 ```
-gst-launch-1.0 decklinksrc mode=8 connection=hdmi device-number=0 ! video/x-raw,format=UYVY,framerate=30000/1001,width=1920,height=1080,interlaced=false ! videoconvert ! videorate drop-only=true ! tee name=t t. ! queue ! videoconvert ! video/x-raw,format=YV12,framerate=30000/1001,width=1920,height=1080,profile=high-4:2:2 ! x264enc tune=zerolatency speed-preset=ultrafast bitrate=8000 ! mpegtsmux ! filesink location=/home/storage/mark/test.ts t. ! queue ! videoconvert ! videoscale ! video/x-raw,format=UYVY,framerate=30000/1001,width=320,height=180 ! textoverlay font-desc="Sans Bold 28" text="Head shot" ! xvimagesink sync=false
+gst-launch-1.0 -e \
+	decklinksrc mode=8 connection=hdmi device-number=0 \
+	! video/x-raw,format=UYVY,framerate=30000/1001,width=1920,height=1080,interlaced=false \
+	! videoconvert \
+	! videorate drop-only=true \
+	! tee name=t t. \
+		! queue \
+		! videoconvert \
+		! video/x-raw,format=YV12,framerate=30000/1001,width=1920,height=1080,profile=high-4:2:2 \
+		! x264enc tune=zerolatency speed-preset=ultrafast bitrate=8000 \
+		! mpegtsmux \
+		! filesink location=/home/storage/mark/test.ts \
+	t. \
+		! queue \
+		! videoconvert \
+		! videoscale \
+		! video/x-raw,format=UYVY,framerate=30000/1001,width=320,height=180 \
+		! textoverlay font-desc="Sans Bold 28" text="Head shot" \
+		! xvimagesink sync=false
 ```
 
 ```
-gst-launch decklinksrc mode=8 connection=hdmi subdevice=0 ! video/x-raw-yuv,framerate=30000/1001,width=1920,height=1080,interlaced=false ! ffmpegcolorspace ! videorate drop-only=true ! tee name=t t. ! queue ! x264enc tune=zerolatency speed-preset=ultrafast bitrate=8000 ! mpegtsmux ! filesink location=/home/storage/mark/test.ts t. ! queue ! videoscale ! video/x-raw-yuv,framerate=30000/1001,width=320,height=180 ! textoverlay font-desc="Sans Bold 28" text="Head shot" ! xvimagesink sync=false
+gst-launch -e \
+	decklinksrc mode=8 connection=hdmi subdevice=0 \
+	! video/x-raw-yuv,framerate=30000/1001,width=1920,height=1080,interlaced=false \
+	! ffmpegcolorspace \
+	! videorate drop-only=true \
+	! tee name=t t. \
+		! queue \
+		! x264enc tune=zerolatency speed-preset=ultrafast bitrate=8000 \
+		! mpegtsmux \
+		! filesink location=/home/storage/mark/test.ts \
+	t. \
+		! queue \
+		! videoscale \
+		! video/x-raw-yuv,framerate=30000/1001,width=320,height=180 \
+		! textoverlay font-desc="Sans Bold 28" text="Head shot" \
+		! xvimagesink sync=false
 ```
 
 ## Gstreamer 1.0 versions
@@ -71,13 +116,19 @@ Using Gstreamer-1.0 opens up possibility of using x264enc with 4:2:2 sampling (r
 ### 4:2:0
 
 ```
-gst-launch-1.0 -ev decklinksrc mode=8 connection=hdmi device-number=0 ! videoconvert ! 'video/x-raw,format=YV12,framerate=30000/1001,width=1920,height=1080' ! x264enc speed-preset=ultrafast bitrate=8000 ! mpegtsmux ! filesink location=/home/storage/mark/test.ts
+gst-launch-1.0 -e \
+	decklinksrc mode=8 connection=hdmi device-number=0 \
+	! videoconvert \
+	! 'video/x-raw,format=YV12,framerate=30000/1001,width=1920,height=1080' \
+	! x264enc speed-preset=ultrafast bitrate=8000 \
+	! mpegtsmux \
+	! filesink location=/home/storage/mark/test.ts
 ```
 
 ### 4:2:2 (uses slightly more CPU due to splitting packed channels to planar)
 
 ```
-gst-launch-1.0 -ev \
+gst-launch-1.0 -e \
 	decklinksrc mode=8 connection=hdmi device-number=0 ! \
 	videoconvert ! \
 	tee name=t \
@@ -100,7 +151,13 @@ gst-launch-1.0 -ev \
 ## Putting it all together
 
 ```
-gst-launch-1.0 -ev decklinksrc mode=8 connection=hdmi device-number=0 ! videoconvert ! 'video/x-raw,format=Y42B,framerate=30000/1001,width=1920,height=1080' ! x264enc speed-preset=ultrafast bitrate=8000 ! mpegtsmux ! filesink location=/home/storage/mark/test.ts
+gst-launch-1.0 -e \
+	decklinksrc mode=8 connection=hdmi device-number=0 \
+	! videoconvert \
+	! 'video/x-raw,format=Y42B,framerate=30000/1001,width=1920,height=1080' \
+	! x264enc speed-preset=ultrafast bitrate=8000 \
+	! mpegtsmux \
+	! filesink location=/home/storage/mark/test.ts
 ```
 
 ## Sources
