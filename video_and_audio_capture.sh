@@ -74,10 +74,18 @@ echo "To stop, CTRL-C in THIS WINDOW - do not just close the display"
 
 gst-launch-1.0 -vvvv \
   decklinkvideosrc mode=$MODE connection=$CONNECTION device-number=$DEVICE \
-    ! videoconvert \
+  ! videoconvert \
+  ! tee name=t \
+  t. \
     ! x264enc speed-preset=ultrafast bitrate=8000 \
     ! queue \
     ! mux. \
+  t. \
+    ! videoscale \
+    ! video/x-raw, width=320, height=180 \
+    ! textoverlay font-desc="Sans Bold 24" text="$DEVICE: $SHOT" color=0xff90ff00 \
+    ! queue \
+    ! xvimagesink sync=false \
   decklinkaudiosrc connection=embedded device-number=$DEVICE \
     ! audioconvert \
     ! lamemp3enc \
