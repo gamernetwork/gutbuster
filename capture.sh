@@ -82,25 +82,21 @@ FILENAME=EGX`date +%Y`_`date +%a_%T`_$SHOT.ts
 echo "Capturing device $DEVICE to $FILENAME"
 echo "To stop, CTRL-C in THIS WINDOW - do not just close the display"
 
-# mode 8 is 1080p29.97 - to find other modes run:
-# gst-inspect-1.0 decklinksrc
-
 gst-launch-1.0 \
-  decklinkvideosrc mode=$MODE connection=$CONNECTION device-number=$DEVICE ! \
-  videoconvert ! \
-  tee name=t \
-    t. ! \
-      videoscale ! \
-      video/x-raw, width=320, height=180 ! \
-      textoverlay font-desc="Sans Bold 24" text="$DEVICE: $SHOT" color=0xff90ff00 ! \
-      queue ! \
-      xvimagesink sync=false \
-    t. ! \
-      videoscale ! \
-      queue ! \
-      x264enc speed-preset=ultrafast bitrate=$BITRATE ! \
-      mpegtsmux ! \
-      filesink location=$DIR/$FILENAME
+  decklinkvideosrc mode=$MODE connection=$CONNECTION device-number=$DEVICE \
+  ! videoconvert \
+  ! tee name=t \
+    t. \
+      ! videoscale method=nearest-neighbour \
+      ! video/x-raw, width=320, height=180 \
+      ! textoverlay font-desc="Sans Bold 24" text="$DEVICE: $SHOT" color=0xff90ff00 \
+      ! queue \
+      ! xvimagesink sync=false \
+    t. \
+      ! videoscale \
+      ! queue \
+      ! x264enc speed-preset=ultrafast bitrate=$BITRATE \
+      ! mpegtsmux \
+      ! filesink location=$DIR/$FILENAME
 
-      #'video/x-raw,format=YV12,framerate=30000/1001,width=1920,height=1080' ! \
-# note color is big endian, so 0xaaRRGGBB
+# note text color is big endian, so 0xaaRRGGBB
