@@ -22,7 +22,7 @@ gst-launch-1.0 alsasrc device="hw:CARD=USB,DEV=0" \
         ! wavescope shader=0 style=color-lines ! video/x-raw,format=BGRx,width=640,height=480,framerate=30 \
         ! videoscale ! ximagesink \
     t. ! queue ! audioconvert \
-        ! lamemp3enc quality=$QUALITY target=0 encoding-engine-quality=standard perfect-timestamp=true ! id3v2mux ! filesink location=$FILENAME \
+        ! lamemp3enc quality=$QUALITY target=quality encoding-engine-quality=standard perfect-timestamp=true ! id3v2mux ! filesink location=$FILENAME \
     t. ! queue ! pulsesink
 
         # ! volume volume=4 \

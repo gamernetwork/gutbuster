@@ -5,6 +5,7 @@ DEVICE=0
 CONNECTION=sdi
 SHOT="Mix"
 BITRATE=12000
+QUALITY=1 # audio quality, 1 is good 10 is bad
 MODE=1080p2997
 
 usage()
@@ -107,7 +108,7 @@ gst-launch-1.0 \
     ! xvimagesink sync=false \
   decklinkaudiosrc connection=embedded device-number=$DEVICE \
     ! audioconvert \
-    ! lamemp3enc bitrate=320 \
+    ! lamemp3enc quality=$QUALITY target=quality encoding-engine-quality=standard perfect-timestamp=true \
     ! queue \
     ! mux. \
   mp4mux name=mux fragment-duration=1000 \
