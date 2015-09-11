@@ -1,11 +1,11 @@
 #!/bin/bash
 
 DIR=`pwd`
-DEVICE=0 # 0-3
+DEVICE=0 # 0 -> (devices - 1)
 CONNECTION=sdi # or hdmi
 SHOT="Unnamed"
 BITRATE=8000
-MODE=0
+MODE=1080p2997
 
 usage()
 {
@@ -17,10 +17,9 @@ Now with preview!
 
 OPTIONS:
    -h       Show this message
-   -d       Zero indexed device ID to capture (0-3 on a 4 card machine, default=0)
+   -d       Zero indexed device ID to capture (e.g. 0-3 on a 4 card machine, default=0)
    -c       Connection type: 'hdmi' or 'sdi' (default sdi)
    -n       Name of this shot (default 'Unnamed')
-   -l       Folder to save vids into (default pwd)
    -b       Bitrate in Kbit/s (default 8000 = 8Mbit)
    -m       Mode (mode # or shotcode should work)
                 Mode #  Name             Shortcode
