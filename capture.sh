@@ -4,7 +4,7 @@ DIR=`pwd`
 DEVICE=0 # 0 ->  (devices - 1)
 CONNECTION=sdi # or hdmi
 SHOT="Unnamed"
-BITRATE=12000
+QUALITY=" pass=4 quantizer=23 "
 MODE=1080p2997
 
 usage()
@@ -21,7 +21,8 @@ OPTIONS:
    -c       Connection type: 'hdmi' or 'sdi' (default sdi)
    -n       Name of this shot (default 'Unnamed')
    -l       Folder to save vids into (default pwd)
-   -b       Bitrate in Kbit/s (default 8000 = 8Mbit)
+   -q       Use constant quantizer targeted encoding (default), using this factor (0=lossless, 23=default, 63=max)
+   -b       Use bitrate targeted encoding, using this bitrate in Kbit/s (12000 = 12Mbit)
    -m       Mode (mode # or shotcode should work)
                 Mode #  Name             Shortcode
                 ------  ---------------  ----------
@@ -45,7 +46,7 @@ OPTIONS:
 EOF
 }
 
-while getopts “hl:d:m:c:n:b:” OPTION
+while getopts “hl:d:m:c:n:b:q:” OPTION
 do
      case $OPTION in
          h)
@@ -67,8 +68,13 @@ do
          m)
              MODE=$OPTARG
              ;;
+         q)
+             QP=$OPTARG
+             QUALITY=" pass=4 quantizer=$QP "
+             ;;
          b)
              BITRATE=$OPTARG
+             QUALITY=" pass=17 bitrate=$BITRATE "
              ;;
          ?)
              usage
@@ -77,26 +83,28 @@ do
      esac
 done
 
-FILENAME=EGX`date +%Y`_`date +%a_%T`_$SHOT.ts
+FILENAME=EGX`date +%Y`_`date +%a_%T`_$SHOT.mp4
 
-echo "Capturing device $DEVICE to $FILENAME"
-echo "To stop, CTRL-C in THIS WINDOW - do not just close the display"
+echo
+echo "* Capturing device $DEVICE to $FILENAME"
+echo
 
 gst-launch-1.0 \
-  decklinkvideosrc mode=$MODE connection=$CONNECTION device-number=$DEVICE \
-  ! videoconvert \
+  decklinkvideosrc mode=$MODE connection=$CONNECTION device-number=$DEVICE do-timestamp=true \
   ! tee name=t \
     t. \
+      ! videoconvert \
       ! videoscale method=nearest-neighbour \
       ! video/x-raw, width=320, height=180 \
       ! textoverlay font-desc="Sans Bold 24" text="$DEVICE: $SHOT" color=0xff90ff00 \
       ! queue \
       ! xvimagesink sync=false \
     t. \
+      ! videoconvert \
       ! videoscale \
       ! queue \
-      ! x264enc speed-preset=ultrafast bitrate=$BITRATE \
-      ! mpegtsmux \
+      ! x264enc speed-preset=ultrafast $QUALITY \
+      ! mp4mux fragment-duration=1000 \
       ! filesink location=$DIR/$FILENAME
 
 # note text color is big endian, so 0xaaRRGGBB

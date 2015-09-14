@@ -4,8 +4,8 @@ DIR=`pwd`
 DEVICE=0
 CONNECTION=sdi
 SHOT="Mix"
-BITRATE=12000
-QUALITY=1 # audio quality, 1 is good 10 is bad
+QUALITY=" pass=4 quantizer=23 "
+AUDIO_QUALITY=1 # audio quality, 1 is good 10 is bad
 MODE=1080p2997
 
 usage()
@@ -23,7 +23,8 @@ OPTIONS:
    -f       Filename stem
    -n       Name of this shot (default 'Unnamed')
    -l       Folder to save vids into (default pwd)
-   -b       Bitrate in Kbit/s (default 8000 = 8Mbit)
+   -q       Use constant quantizer targeted encoding (default), using this factor (0=lossless, 23=default, 63=max)
+   -b       Use bitrate targeted encoding, using this bitrate in Kbit/s (12000 = 12Mbit)
    -m       Mode (mode # or shotcode should work)
                 Mode #  Name             Shortcode
                 ------  ---------------  ----------
@@ -49,7 +50,7 @@ EOF
 
 FILENAME_STEM=EGX_mix_`date +%Y`_`date +%a_%T`
 
-while getopts “hl:d:m:f:c:n:b:” OPTION
+while getopts “hl:d:m:f:c:q:n:b:” OPTION
 do
      case $OPTION in
          h)
@@ -71,8 +72,13 @@ do
          m)
              MODE=$OPTARG
              ;;
+         q)
+             QP=$OPTARG
+             QUALITY=" pass=4 quantizer=$QP "
+             ;;
          b)
              BITRATE=$OPTARG
+             QUALITY=" pass=17 bitrate=$BITRATE "
              ;;
          f)
              FILENAME_STEM=$OPTARG
@@ -87,17 +93,16 @@ done
 FILENAME=${FILENAME_STEM}_${SHOT}.mp4
 
 echo "Capturing device $DEVICE to $FILENAME"
-echo "To stop, CTRL-C in THIS WINDOW - do not just close the display"
 
 # mode 8 is 1080p29.97 - to find other modes run:
 # gst-inspect-1.0 decklinksrc
 
 gst-launch-1.0 \
-  decklinkvideosrc mode=$MODE connection=$CONNECTION device-number=$DEVICE \
+  decklinkvideosrc mode=$MODE connection=$CONNECTION device-number=$DEVICE do-timestamp=true \
   ! videoconvert \
   ! tee name=t \
   t. \
-    ! x264enc speed-preset=ultrafast bitrate=$BITRATE \
+    ! x264enc speed-preset=ultrafast $QUALITY \
     ! queue \
     ! mux. \
   t. \
@@ -106,18 +111,20 @@ gst-launch-1.0 \
     ! textoverlay font-desc="Sans Bold 18" text="$DEVICE: $SHOT Video" color=0xff90ff00 \
     ! queue \
     ! xvimagesink sync=false \
-  decklinkaudiosrc connection=embedded device-number=$DEVICE \
+  decklinkaudiosrc connection=embedded device-number=$DEVICE do-timestamp=true \
     ! tee name=at \
     at. ! queue \
       ! audioconvert \
-      ! lamemp3enc quality=$QUALITY target=quality encoding-engine-quality=standard \
+      ! lamemp3enc quality=$AUDIO_QUALITY target=quality encoding-engine-quality=standard \
       ! queue \
       ! mux. \
     at. ! queue \
       ! wavescope shader=0 style=color-lines \
-      ! video/x-raw,format=BGRx,width=160,height=90,framerate=5/1 \
+      ! video/x-raw,format=BGRx,width=160,height=90,framerate=30000/1001 \
       ! textoverlay font-desc="Sans Bold 18" text="$DEVICE: $SHOT Audio" color=0xff90ff00 \
-      ! ximagesink \
+      ! videoconvert \
+      ! xvimagesink sync=false \
   mp4mux name=mux fragment-duration=1000 \
     ! filesink location=$DIR/$FILENAME
+
 

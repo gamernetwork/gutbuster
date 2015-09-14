@@ -63,14 +63,14 @@ echo "Stop by CTRL-C'ing THIS window, not the waveform thing."
 # using ximagesink (not xVimagesink, i.e. no 'v') to avoid colorspace conversion
 # and just suggesting which caps to use so it's all RGB and low framerate
 
-gst-launch-1.0 alsasrc device="$ALSA_DEVICE" \
+gst-launch-1.0 alsasrc device="$ALSA_DEVICE" do-timestamp=true \
     ! tee name=t \
     t. ! queue ! audioconvert \
         ! wavescope shader=0 style=color-lines \
-        ! video/x-raw,format=BGRx,width=640,height=480,framerate=5/1 \
+        ! video/x-raw,format=BGRx,width=640,height=480,framerate=30/1 \
         ! textoverlay font-desc="Sans Bold 24" text="$SHOT" color=0xff90ff00 \
         ! ximagesink \
     t. ! queue ! audioconvert \
-        ! lamemp3enc quality=$QUALITY target=quality encoding-engine-quality=$SPEED perfect-timestamp=true ! id3v2mux ! filesink location=$FILENAME \
+        ! lamemp3enc quality=$QUALITY target=quality encoding-engine-quality=$SPEED ! id3v2mux ! filesink location=$FILENAME \
     t. ! queue ! pulsesink
 
