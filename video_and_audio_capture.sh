@@ -8,21 +8,25 @@ QUALITY=" pass=4 quantizer=23 "
 AUDIO_QUALITY=1 # audio quality, 1 is good 10 is bad
 MODE=1080p2997
 
+VIDEO_SRC="decklinkvideosrc mode=$MODE connection=$CONNECTION device-number=$DEVICE do-timestamp=true"
+AUDIO_SRC="decklinkaudiosrc connection=embedded device-number=$DEVICE do-timestamp=true"
+
 usage()
 {
 cat << EOF
 usage: $0 options
 
-Capture video from decklink device to 'fragmented' mp4 file, encoded h264 (ultrafast).
-Now with preview!
+Capture video and audio from decklink device to 'fragmented' mp4 file,
+encoded h264 (ultrafast). With preview and scope!
 
 OPTIONS:
    -h       Show this message
+   -t       Test mode - use test sources instead of decklink
    -d       Device ID to capture (0-3 on a 4 card machine, default=0)
    -c       Connection type: 'hdmi' or 'sdi' (default sdi)
    -f       Filename stem
    -n       Name of this shot (default 'Unnamed')
-   -l       Folder to save vids into (default pwd)
+   -l       Folder to save vids into (default cwd)
    -q       Use constant quantizer targeted encoding (default), using this factor (0=lossless, 23=default, 63=max)
    -b       Use bitrate targeted encoding, using this bitrate in Kbit/s (12000 = 12Mbit)
    -m       Mode (mode # or shotcode should work)
@@ -50,7 +54,7 @@ EOF
 
 FILENAME_STEM=EGX_mix_`date +%Y`_`date +%a_%T`
 
-while getopts “hl:d:m:f:c:q:n:b:” OPTION
+while getopts “htl:d:m:f:c:q:n:b:” OPTION
 do
      case $OPTION in
          h)
@@ -83,6 +87,11 @@ do
          f)
              FILENAME_STEM=$OPTARG
              ;;
+         t)
+             VIDEO_SRC="videotestsrc is-live=true do-timestamp=true"
+             AUDIO_SRC="audiotestsrc wave=0 freq=440 do-timestamp=true"
+             #AUDIO_SRC="autoaudiosrc do-timestamp=true"
+			 ;;
          ?)
              usage
              exit
@@ -94,35 +103,46 @@ FILENAME=${FILENAME_STEM}_${SHOT}.mp4
 
 echo "Capturing device $DEVICE to $FILENAME"
 
-# mode 8 is 1080p29.97 - to find other modes run:
-# gst-inspect-1.0 decklinksrc
-
 gst-launch-1.0 \
-  decklinkvideosrc mode=$MODE connection=$CONNECTION device-number=$DEVICE do-timestamp=true \
+  $VIDEO_SRC \
   ! videoconvert \
   ! tee name=t \
   t. \
-    ! x264enc speed-preset=ultrafast $QUALITY \
     ! queue \
+    ! x264enc speed-preset=ultrafast $QUALITY \
     ! mux. \
   t. \
+    ! queue \
     ! videoscale \
     ! video/x-raw, width=320, height=180 \
-    ! textoverlay font-desc="Sans Bold 18" text="$DEVICE: $SHOT Video" color=0xff90ff00 \
-    ! queue \
-    ! xvimagesink sync=false \
-  decklinkaudiosrc connection=embedded device-number=$DEVICE do-timestamp=true \
+    ! textoverlay \
+	    font-desc="Sans Bold 24" \
+		shaded-background=true \
+        text="$DEVICE: $SHOT" \
+		halignment=left \
+		valignment=top \
+		color=0xff90ff00 \
+		outline-color=0x0090ff00 \
+	! mix. \
+  $AUDIO_SRC \
     ! tee name=at \
-    at. ! queue \
+    at. \
+	  ! queue \
       ! audioconvert \
       ! lamemp3enc quality=$AUDIO_QUALITY target=quality encoding-engine-quality=standard \
-      ! queue \
       ! mux. \
-    at. ! queue \
-      ! wavescope shader=0 style=color-lines \
-      ! video/x-raw,format=BGRx,width=160,height=90,framerate=30000/1001 \
-      ! textoverlay font-desc="Sans Bold 18" text="$DEVICE: $SHOT Audio" color=0xff90ff00 \
+    at. \
+	  ! queue \
+      ! wavescope shader=0 style=lines \
+      ! video/x-raw,format=BGRx,width=320,height=90,framerate=30000/1001 \
       ! videoconvert \
+	  ! mix. \
+	at. \
+	  ! queue \
+      ! pulsesink \
+  videomixer name="mix" \
+      sink_0::xpos=0 sink_0::ypos=0 \
+      sink_1::xpos=0 sink_1::ypos=180 \
       ! xvimagesink sync=false \
   mp4mux name=mux fragment-duration=1000 \
     ! filesink location=$DIR/$FILENAME

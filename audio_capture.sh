@@ -66,8 +66,8 @@ echo "Stop by CTRL-C'ing THIS window, not the waveform thing."
 gst-launch-1.0 alsasrc device="$ALSA_DEVICE" do-timestamp=true \
     ! tee name=t \
     t. ! queue ! audioconvert \
-        ! wavescope shader=0 style=color-lines \
-        ! video/x-raw,format=BGRx,width=640,height=480,framerate=30/1 \
+        ! wavescope shader=0 style=lines \
+        ! video/x-raw,format=BGRx,width=320,height=240,framerate=30000/1001 \
         ! textoverlay font-desc="Sans Bold 24" text="$SHOT" color=0xff90ff00 \
         ! ximagesink \
     t. ! queue ! audioconvert \
