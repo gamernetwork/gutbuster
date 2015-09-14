@@ -74,7 +74,7 @@ do
              ;;
          b)
              BITRATE=$OPTARG
-             QUALITY=" pass=17 bitrate=$BITRATE "
+             QUALITY=" pass=0 bitrate=$BITRATE "
              ;;
          ?)
              usage
