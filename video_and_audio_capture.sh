@@ -103,14 +103,21 @@ gst-launch-1.0 \
   t. \
     ! videoscale \
     ! video/x-raw, width=320, height=180 \
-    ! textoverlay font-desc="Sans Bold 24" text="$DEVICE: $SHOT" color=0xff90ff00 \
+    ! textoverlay font-desc="Sans Bold 18" text="$DEVICE: $SHOT Video" color=0xff90ff00 \
     ! queue \
     ! xvimagesink sync=false \
   decklinkaudiosrc connection=embedded device-number=$DEVICE \
-    ! audioconvert \
-    ! lamemp3enc quality=$QUALITY target=quality encoding-engine-quality=standard perfect-timestamp=true \
-    ! queue \
-    ! mux. \
+    ! tee name=at \
+    at. ! queue \
+      ! audioconvert \
+      ! lamemp3enc quality=$QUALITY target=quality encoding-engine-quality=standard \
+      ! queue \
+      ! mux. \
+    at. ! queue \
+      ! wavescope shader=0 style=color-lines \
+      ! video/x-raw,format=BGRx,width=160,height=90,framerate=5/1 \
+      ! textoverlay font-desc="Sans Bold 18" text="$DEVICE: $SHOT Audio" color=0xff90ff00 \
+      ! ximagesink \
   mp4mux name=mux fragment-duration=1000 \
     ! filesink location=$DIR/$FILENAME
 
