@@ -91,7 +91,7 @@ gst-launch-1.0 \
   videoconvert ! \
   videoscale ! \
   video/x-raw, width=320, height=180 ! \
-  textoverlay font-desc="Sans Bold 24" text="$DEVICE: $SHOT" color=0xff90ff00 ! \
+  textoverlay font-desc="Sans Bold 24" text="PREVIEW: $DEVICE: $SHOT" color=0xffff3000 ! \
   queue ! \
   xvimagesink sync=false \
 
