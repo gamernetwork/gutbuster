@@ -12,8 +12,7 @@ usage()
 cat << EOF
 usage: $0 options
 
-Capture video from decklink device to mpegts file, encoded h264 (ultrafast).
-Now with preview!
+Preview video from a Decklink card.
 
 OPTIONS:
    -h       Show this message
