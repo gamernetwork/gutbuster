@@ -1,5 +1,6 @@
-gutbuster
-=========
+Want to work for Gamer Network? [We are hiring!](http://www.gamesindustry.biz/jobs/gamer-network)
+
+# Gutbuster
 
 Video ingest and archive system for Blackmagic design capture cards.
 
