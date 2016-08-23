@@ -60,25 +60,25 @@ class Capture:
         print("Add scaler")
         scale = Gst.ElementFactory.make('videoscale')
         self.pipeline.add(scale)
-        scale.set_state(Gst.State.PAUSED)
+        #scale.set_state(Gst.State.PAUSED)
 
         queue = self.pipeline.get_by_name('pq')
         preview = self.pipeline.get_by_name('ps')
         src = queue.get_static_pad('src')
+
+        preview_caps = Gst.caps_from_string('video/x-raw, width=160, height=90');
+
         def block(pad, info, user_data):
             return Gst.PadProbeReturn.OK
-        prid = src.add_probe(Gst.PadProbeType.BLOCK, block, None)
-        print("Unlink preview")
+
+        self.pipeline.set_state(Gst.State.PAUSED)
+        #prid = src.add_probe(Gst.PadProbeType.BLOCK, block, None)
         queue.unlink(preview)
-        preview.set_state(Gst.State.NULL)
-        print("Link scale")
-        queue.link(scale)
-        print("Link preview")
-        scale.link(preview)
         scale.set_state(Gst.State.PLAYING)
-        preview.set_state(Gst.State.PLAYING)
-        print("Remove probe")
-        src.remove_probe(prid)
+        queue.link(scale)
+        scale.link_filtered(preview, preview_caps)
+        #src.remove_probe(prid)
+        self.pipeline.set_state(Gst.State.PLAYING)
 
     def pmsg(self, msg_bus, msg):
         if msg.type == Gst.MessageType.ERROR or msg.type == Gst.MessageType.EOS:
