@@ -10,44 +10,94 @@ from gi.repository import GstVideo
 GObject.threads_init()
 Gst.init(None)
 
+ml = GObject.MainLoop()
 
-# decklinkvideosrc mode=auto connection=hdmi device-number=$DEVICE ! \
-# Build the pipeline
-pipeline = Gst.parse_launch( "\
-  autovideosrc name=webcam \
-  ! video/x-raw, width=640, height=360 \
-  ! videoconvert \
-  ! videoscale \
-  ! video/x-raw, width=320, height=180 \
-  ! textoverlay name=overlay font-desc=\"Sans Bold 24\" text=\"PREVIEW: $DEVICE: $SHOT\" color=0xffff3000 \
-  ! queue \
-  ! xvimagesink \
-")
+class Capture:
+    def __init__(self):
+        # decklinkvideosrc mode=auto connection=hdmi device-number=$DEVICE ! \
+        self.pipeline = Gst.parse_launch( "\
+          videotestsrc name=webcam \
+          ! video/x-raw, width=640, height=360 \
+          ! tee name=t \
+          ! queue \
+          ! videoconvert \
+          ! videoscale \
+          ! video/x-raw, width=320, height=180 \
+          ! textoverlay name=overlay font-desc=\"Sans Bold 24\" text=\"0\" color=0xffff3000 \
+          ! xvimagesink \
+        ")
+        self.bus = self.pipeline.get_bus()
+        self.bus.add_signal_watch()
 
-# Start playing
-pipeline.set_state(Gst.State.PLAYING)
+        # Start playing
+        self.pipeline.set_state(Gst.State.PLAYING)
+        self.bus.connect('message', self.pmsg)
 
-def stats():
-    pad = pipeline.get_by_name("webcam").get_static_pad('src')
-    caps = pad.get_current_caps()
-    if caps:
-        s = caps.get_size()
-        print("Size %i" % s)
-        st = caps.get_structure(0)
-        v = st.get_fraction('framerate')
-        print(v.value_numerator/v.value_denominator)
+    def stats(self, msg_bus):
+        pad = self.pipeline.get_by_name("webcam").get_static_pad('src')
+        caps = pad.get_current_caps()
+        if caps:
+            s = caps.get_size()
+            #print("Size %i" % s)
+            st = caps.get_structure(0)
+            v = st.get_fraction('framerate')
+            fps = v.value_numerator/v.value_denominator
+            self.pipeline.get_by_name("overlay").set_property('text', '%i' % fps)
 
-# Wait until error or EOS
-bus = pipeline.get_bus()
-while True:
-    msg = bus.timed_pop(Gst.CLOCK_TIME_NONE)
-    if msg.type == Gst.MessageType.ERROR or msg.type == Gst.MessageType.EOS:
-        break
-    if msg.type == Gst.MessageType.STATE_CHANGED:
-        print pipeline.get_state(Gst.CLOCK_TIME_NONE).state
-        stats()
+    def addPreview(self):
+        print("Add preview")
+        queue = Gst.ElementFactory.make('queue', 'pq')
+        sink = Gst.ElementFactory.make('xvimagesink', 'ps')
+        self.pipeline.add(queue)
+        self.pipeline.add(sink)
+        queue.set_state(Gst.State.PLAYING)
+        sink.set_state(Gst.State.PLAYING)
+        tee = self.pipeline.get_by_name('t')
+        tee.link(queue)
+        queue.link(sink)
 
+    def addScaler(self):
+        print("Add scaler")
+        scale = Gst.ElementFactory.make('videoscale')
+        self.pipeline.add(scale)
+        scale.set_state(Gst.State.PAUSED)
 
+        queue = self.pipeline.get_by_name('pq')
+        preview = self.pipeline.get_by_name('ps')
+        src = queue.get_static_pad('src')
+        def block(pad, info, user_data):
+            return Gst.PadProbeReturn.OK
+        prid = src.add_probe(Gst.PadProbeType.BLOCK, block, None)
+        print("Unlink preview")
+        queue.unlink(preview)
+        preview.set_state(Gst.State.NULL)
+        print("Link scale")
+        queue.link(scale)
+        print("Link preview")
+        scale.link(preview)
+        scale.set_state(Gst.State.PLAYING)
+        preview.set_state(Gst.State.PLAYING)
+        print("Remove probe")
+        src.remove_probe(prid)
 
-# Free resources
-pipeline.set_state(Gst.State.NULL)
+    def pmsg(self, msg_bus, msg):
+        if msg.type == Gst.MessageType.ERROR or msg.type == Gst.MessageType.EOS:
+            ml.quit()       
+        if msg.type == Gst.MessageType.STATE_CHANGED:
+            #print pipeline.get_state(Gst.CLOCK_TIME_NONE).state
+            self.stats(msg_bus)
+
+c1 = Capture()
+c2 = Capture()
+
+GObject.timeout_add(1000, c1.addPreview)
+GObject.timeout_add(1000, c2.addPreview)
+
+GObject.timeout_add(2000, c1.addScaler)
+
+try:
+    ml.run()
+finally:
+    # Free resources when mainloop terminates
+    c1.pipeline.set_state(Gst.State.NULL)
+    c2.pipeline.set_state(Gst.State.NULL)
