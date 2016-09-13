@@ -2,10 +2,10 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('Gst', '1.0')
 gi.require_version('GstVideo', '1.0')
-from gi.repository import GObject, Gst
+from gi.repository import GObject, Gst, Gtk
 
 # Needed for window.get_xid(), xvimagesink.set_window_handle(), respectively:
-from gi.repository import GstVideo
+from gi.repository import GstVideo, GdkX11
 
 import re
 
@@ -70,7 +70,25 @@ def lookup_layout(layout, inp):
 
 
 class Capture:
-    def __init__(self, inputs, output_mode, layout):
+
+    def build_gui(self):
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file("multiview.ui")
+        self.window = self.builder.get_object("main")
+        self.window.connect('destroy', self.quit)
+        self.window.set_default_size(960, 540)
+        self.view = self.builder.get_object("view")
+        self.window.show_all()
+        # You need to get the XID after window.show_all().  You shouldn't get it
+        # in the on_sync_message() handler because threading issues will cause
+        # segfaults there.
+        self.view_xid = self.view.get_property('window').get_xid()
+
+    def quit(self, window):
+        self.pipeline.set_state(Gst.State.NULL)
+        Gtk.main_quit()
+
+    def build_pipeline(self, inputs, output_mode, layout):
         # decklinkvideosrc mode=auto connection=hdmi device-number=$DEVICE ! \
         input_pipelines = []
         mixer_spec = [
@@ -82,19 +100,31 @@ class Capture:
             mixer_spec += self.make_mixer_pad_spec(inp, inp_layout)
             
         pipeline_spec = input_pipelines + mixer_spec + [
-            "! xvimagesink sync=false"
+            "! xvimagesink name=view_sink sync=false"
         ]
 
         pipeline_spec = " ".join(pipeline_spec)
-        print(pipeline_spec)
 
         self.pipeline = Gst.parse_launch( pipeline_spec )
-        #self.bus = self.pipeline.get_bus()
-        #self.bus.add_signal_watch()
 
+    def setup_messaging(self):
+        self.bus = self.pipeline.get_bus()
+        #self.bus.connect('message', self.pmsg)
+        self.bus.add_signal_watch()
+        self.bus.connect('message::error', self.on_error)
+
+        # This is needed to make the video output in our DrawingArea:
+        self.bus.enable_sync_message_emission()
+        self.bus.connect('sync-message::element', self.on_sync_message)
+
+    def __init__(self, inputs, output_mode, layout):
+        self.build_gui()
+        self.build_pipeline(inputs, output_mode, layout)
+        self.setup_messaging()
+
+    def run(self):
         # Start playing
         self.pipeline.set_state(Gst.State.PLAYING)
-        #self.bus.connect('message', self.pmsg)
 
     def make_mixer_pad_spec(self, device, layout):
         device['x'] = layout['x']
@@ -133,6 +163,7 @@ class Capture:
         spec = [l.format(**device) for l in spec]
         return spec
 
+    # TODO plug in this stats stuff, perhaps into status bar?
     def stats(self, msg_bus):
         pad = self.pipeline.get_by_name("webcam").get_static_pad('src')
         caps = pad.get_current_caps()
@@ -144,48 +175,24 @@ class Capture:
             fps = v.value_numerator/v.value_denominator
             self.pipeline.get_by_name("overlay").set_property('text', '%i' % fps)
 
-    def addPreview(self):
-        print("Add preview")
-        queue = Gst.ElementFactory.make('queue', 'pq')
-        sink = Gst.ElementFactory.make('xvimagesink', 'ps')
-        self.pipeline.add(queue)
-        self.pipeline.add(sink)
-        queue.set_state(Gst.State.PLAYING)
-        sink.set_state(Gst.State.PLAYING)
-        tee = self.pipeline.get_by_name('t')
-        tee.link(queue)
-        queue.link(sink)
+#    def pmsg(self, msg_bus, msg):
+#        if msg.type == Gst.MessageType.ERROR or msg.type == Gst.MessageType.EOS:
+#            ml.quit()       
+#        if msg.type == Gst.MessageType.STATE_CHANGED:
+#            #print pipeline.get_state(Gst.CLOCK_TIME_NONE).state
+#            self.stats(msg_bus)
 
-    def addScaler(self):
-        print("Add scaler")
-        scale = Gst.ElementFactory.make('videoscale')
-        self.pipeline.add(scale)
-        #scale.set_state(Gst.State.PAUSED)
+    def on_sync_message(self, bus, msg):
+        if msg.get_structure().get_name() == 'prepare-window-handle':
+            print(msg.src.name);
+            if msg.src.name == "view_sink":
+                print('live prepare-window-handle')
+                msg.src.set_property('force-aspect-ratio', True)
+                msg.src.set_window_handle(self.view_xid)
+                
 
-        queue = self.pipeline.get_by_name('pq')
-        preview = self.pipeline.get_by_name('ps')
-        src = queue.get_static_pad('src')
-
-        preview_caps = Gst.caps_from_string('video/x-raw, width=160, height=90');
-
-        def block(pad, info, user_data):
-            return Gst.PadProbeReturn.OK
-
-        self.pipeline.set_state(Gst.State.PAUSED)
-        #prid = src.add_probe(Gst.PadProbeType.BLOCK, block, None)
-        queue.unlink(preview)
-        scale.set_state(Gst.State.PLAYING)
-        queue.link(scale)
-        scale.link_filtered(preview, preview_caps)
-        #src.remove_probe(prid)
-        self.pipeline.set_state(Gst.State.PLAYING)
-
-    def pmsg(self, msg_bus, msg):
-        if msg.type == Gst.MessageType.ERROR or msg.type == Gst.MessageType.EOS:
-            ml.quit()       
-        if msg.type == Gst.MessageType.STATE_CHANGED:
-            #print pipeline.get_state(Gst.CLOCK_TIME_NONE).state
-            self.stats(msg_bus)
+    def on_error(self, bus, msg):
+        print('on_error():', msg.parse_error())
 
 def get_args():
     import argparse
@@ -219,9 +226,11 @@ if __name__=="__main__":
 
     output_mode = caps_from_mode(config.OUTPUT_MODE)
 
-    c1 = Capture(inps, output_mode, config.LAYOUT)
     try:
-        ml.run()
+        c1 = Capture(inps, output_mode, config.LAYOUT)
+        c1.run()
+        Gtk.main()
     finally:
-        # Free resources when mainloop terminates
+        # Free resources if mainloop dies
         c1.pipeline.set_state(Gst.State.NULL)
+
