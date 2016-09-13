@@ -7,16 +7,15 @@ from gi.repository import GObject, Gst
 # Needed for window.get_xid(), xvimagesink.set_window_handle(), respectively:
 from gi.repository import GstVideo
 
+import re
+
 GObject.threads_init()
 Gst.init(None)
 
 ml = GObject.MainLoop()
 
-from config import *
-
 def caps_from_mode( mode ):
-    import re
-    m = re.match( '(720|1080)(i|p)(2398|24|25|2997|30|50|5994|60)' )
+    m = re.match( '(720|1080)(i|p)(2398|24|25|2997|30|50|5994|60)', mode )
     if m:
         height = int(m.group(1))
         width = height/9*16
@@ -46,25 +45,93 @@ def caps_from_mode( mode ):
     else:
         raise Exception('Mode "' + mode + '" is not valid.')
 
+def lookup_layout(layout, inp):
+    x = 0
+    y = 0
+    prev_w = 0
+    prev_h = 0
+    for l in layout:
+        if l.has_key('x'):
+            x = l['x']
+            y = l['y']
+        else:
+            x += prev_w
+            # y stays the same
+
+        if l['input'] == inp['name']:
+            return {
+                'x': x,
+                'y': y,
+                'w': l['w'],
+                'h': l['h']
+            }
+        prev_w = l['w']
+        prev_h = l['h']
 
 
 class Capture:
-    def __init__(self):
+    def __init__(self, inputs, output_mode, layout):
         # decklinkvideosrc mode=auto connection=hdmi device-number=$DEVICE ! \
-        self.pipeline_spec = "\
-          $gstcmd \
-          videomixer name=mix \
-            $mixercmd \
-            ! xvimagesink sync=false
-        "
+        input_pipelines = []
+        mixer_spec = [
+            "videomixer name=mix",
+        ]
+        for inp in inputs:
+            inp_layout = lookup_layout(layout, inp)
+            input_pipelines += self.make_src_branch_spec(inp, inp_layout)
+            mixer_spec += self.make_mixer_pad_spec(inp, inp_layout)
+            
+        pipeline_spec = input_pipelines + mixer_spec + [
+            "! xvimagesink sync=false"
+        ]
 
-        self.pipeline = Gst.parse_launch( self.pipeline_spec )
-        self.bus = self.pipeline.get_bus()
-        self.bus.add_signal_watch()
+        pipeline_spec = " ".join(pipeline_spec)
+        print(pipeline_spec)
+
+        self.pipeline = Gst.parse_launch( pipeline_spec )
+        #self.bus = self.pipeline.get_bus()
+        #self.bus.add_signal_watch()
 
         # Start playing
         self.pipeline.set_state(Gst.State.PLAYING)
-        self.bus.connect('message', self.pmsg)
+        #self.bus.connect('message', self.pmsg)
+
+    def make_mixer_pad_spec(self, device, layout):
+        device['x'] = layout['x']
+        device['y'] = layout['y']
+        spec = [
+            "sink_{index}::xpos={x} sink_{index}::ypos={y} sink_{index}::alpha=1 sink_{index}::zorder=1"
+        ]
+        spec = [l.format(**device) for l in spec]
+        return spec
+
+    def make_src_branch_spec(self, device, layout):
+        device['w'] = layout['w']
+        device['h'] = layout['h']
+        if device['src']['type'] == 'decklinkvideosrc':
+            spec = [
+              "decklinkvideosrc mode={src[mode]} connection={src[connection]} device-number={src[device]}",
+                "! videoconvert",
+                "! videoscale",
+                "! video/x-raw, width={w}, height={h}",
+                "! textoverlay font-desc=\"Sans Bold 24\" text=\"{title}\" color=0xff90ff00",
+                "! queue",
+                "! mix.sink_{index}",
+            ]
+        elif device['src']['type'] == 'test':
+            spec = [
+              "videotestsrc is-live=true",
+                "! videoconvert",
+                "! videoscale",
+                "! video/x-raw, width={w}, height={h}",
+                "! textoverlay font-desc=\"Sans Bold 24\" text=\"{title}\" color=0xff90ff00",
+                "! queue",
+                "! mix.sink_{index}"
+            ]
+        else:
+            raise Exception('Unknown device type ' + device['src']['type'])
+        spec = [l.format(**device) for l in spec]
+        return spec
 
     def stats(self, msg_bus):
         pad = self.pipeline.get_by_name("webcam").get_static_pad('src')
@@ -120,10 +187,41 @@ class Capture:
             #print pipeline.get_state(Gst.CLOCK_TIME_NONE).state
             self.stats(msg_bus)
 
-c1 = Capture()
+def get_args():
+    import argparse
 
-try:
-    ml.run()
-finally:
-    # Free resources when mainloop terminates
-    c1.pipeline.set_state(Gst.State.NULL)
+    parser = argparse.ArgumentParser(description='')
+    parser.add_argument('devices', metavar='DEV', type=str, nargs='*',
+        help='which devices to preview (default: all defined in config)')
+    parser.add_argument('--config',
+        default='config',
+        help='config module (default: config i.e. config.py)')
+
+    args = parser.parse_args()
+    # people might accidentally supply a module filename, which we'll forgive them for
+    args.config=re.sub('.py$', '', args.config)
+    return args
+
+if __name__=="__main__":
+
+    args = get_args()
+    config = __import__(args.config, fromlist=['*'])
+
+    # filter devices if some were supplied on cmdline
+    inps=[]
+    index = 0
+    for inp in config.INPUTS:
+        if len(args.devices) == 0 or inp['name'] in args.devices:
+            inp['src']['caps'] = caps_from_mode(inp['src']['mode'])
+            inp['index'] = index
+            index += 1
+            inps.append(inp)
+
+    output_mode = caps_from_mode(config.OUTPUT_MODE)
+
+    c1 = Capture(inps, output_mode, config.LAYOUT)
+    try:
+        ml.run()
+    finally:
+        # Free resources when mainloop terminates
+        c1.pipeline.set_state(Gst.State.NULL)
