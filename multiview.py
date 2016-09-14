@@ -68,12 +68,16 @@ def lookup_layout(layout, inp):
         prev_w = l['w']
         prev_h = l['h']
 
+class SimpleGSTGTKApp:
 
-class Capture:
+    def __init__(self):
+        self.build_gui('main.ui')
+        self.pipeline = False
+        self.setup_messaging()
 
-    def build_gui(self):
+    def build_gui(self, interface_def):
         self.builder = Gtk.Builder()
-        self.builder.add_from_file("multiview.ui")
+        self.builder.add_from_file(interface_def)
         self.window = self.builder.get_object("main")
         self.window.connect('destroy', self.quit)
         self.window.set_default_size(960, 540)
@@ -87,6 +91,32 @@ class Capture:
     def quit(self, window):
         self.pipeline.set_state(Gst.State.NULL)
         Gtk.main_quit()
+
+    def setup_messaging(self):
+        self.bus = self.pipeline.get_bus()
+        #self.bus.connect('message', self.pmsg)
+        self.bus.add_signal_watch()
+        self.bus.connect('message::error', self.on_error)
+
+        # This is needed to make the video output in our DrawingArea:
+        self.bus.enable_sync_message_emission()
+        self.bus.connect('sync-message::element', self.on_sync_message)
+
+    def run(self):
+        # Start playing
+        self.pipeline.set_state(Gst.State.PLAYING)
+
+    def on_sync_message(self, bus, msg):
+        if msg.get_structure().get_name() == 'prepare-window-handle':
+            #print(msg.src.name);
+            if msg.src.name == "view_sink":
+                #print('live prepare-window-handle')
+                msg.src.set_property('force-aspect-ratio', True)
+                msg.src.set_window_handle(self.view_xid)
+    def on_error(self, bus, msg):
+        print('on_error():', msg.parse_error())
+
+class Capture(SimpleGSTGTKApp):
 
     def build_pipeline(self, inputs, output_mode, layout):
         # decklinkvideosrc mode=auto connection=hdmi device-number=$DEVICE ! \
@@ -107,24 +137,10 @@ class Capture:
 
         self.pipeline = Gst.parse_launch( pipeline_spec )
 
-    def setup_messaging(self):
-        self.bus = self.pipeline.get_bus()
-        #self.bus.connect('message', self.pmsg)
-        self.bus.add_signal_watch()
-        self.bus.connect('message::error', self.on_error)
-
-        # This is needed to make the video output in our DrawingArea:
-        self.bus.enable_sync_message_emission()
-        self.bus.connect('sync-message::element', self.on_sync_message)
-
     def __init__(self, inputs, output_mode, layout):
-        self.build_gui()
+        self.build_gui('multiview.ui')
         self.build_pipeline(inputs, output_mode, layout)
         self.setup_messaging()
-
-    def run(self):
-        # Start playing
-        self.pipeline.set_state(Gst.State.PLAYING)
 
     def make_mixer_pad_spec(self, device, layout):
         device['x'] = layout['x']
@@ -182,17 +198,6 @@ class Capture:
 #            #print pipeline.get_state(Gst.CLOCK_TIME_NONE).state
 #            self.stats(msg_bus)
 
-    def on_sync_message(self, bus, msg):
-        if msg.get_structure().get_name() == 'prepare-window-handle':
-            print(msg.src.name);
-            if msg.src.name == "view_sink":
-                print('live prepare-window-handle')
-                msg.src.set_property('force-aspect-ratio', True)
-                msg.src.set_window_handle(self.view_xid)
-                
-
-    def on_error(self, bus, msg):
-        print('on_error():', msg.parse_error())
 
 def get_args():
     import argparse
