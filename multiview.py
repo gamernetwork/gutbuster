@@ -1,8 +1,9 @@
 import gi
 gi.require_version('Gtk', '3.0')
+gi.require_version('Gdk', '3.0')
 gi.require_version('Gst', '1.0')
 gi.require_version('GstVideo', '1.0')
-from gi.repository import GObject, Gst, Gtk
+from gi.repository import GObject, Gst, Gtk, Gdk
 
 # Needed for window.get_xid(), xvimagesink.set_window_handle(), respectively:
 from gi.repository import GstVideo, GdkX11
@@ -74,6 +75,14 @@ class SimpleGSTGTKApp:
         self.build_gui('main.ui')
         self.pipeline = False
         self.setup_messaging()
+ 
+    def keypress(self, win, event):
+        if event.keyval == Gdk.KEY_F11:
+            win.is_fullscreen = not getattr(win, 'is_fullscreen', False)
+            action = win.fullscreen if win.is_fullscreen else win.unfullscreen
+            action()
+            self.builder.get_object('statusbar1').set_visible(not win.is_fullscreen)
+
 
     def build_gui(self, interface_def):
         self.builder = Gtk.Builder()
@@ -87,6 +96,9 @@ class SimpleGSTGTKApp:
         # in the on_sync_message() handler because threading issues will cause
         # segfaults there.
         self.view_xid = self.view.get_property('window').get_xid()
+
+        #self.window.connect("delete-event", gtk.main_quit)
+        self.window.connect('key-press-event', self.keypress)
 
     def quit(self, window):
         self.pipeline.set_state(Gst.State.NULL)
@@ -105,6 +117,11 @@ class SimpleGSTGTKApp:
     def run(self):
         # Start playing
         self.pipeline.set_state(Gst.State.PLAYING)
+
+    def set_rec_test(self, inputname):
+        # how to dynamically set a property
+        overlay = self.pipeline.get_by_name('%s_textoverlay' % inputname)
+        overlay.set_property("color", 0xffff8060)
 
     def on_sync_message(self, bus, msg):
         if msg.get_structure().get_name() == 'prepare-window-handle':
@@ -130,10 +147,12 @@ class Capture(SimpleGSTGTKApp):
             mixer_spec += self.make_mixer_pad_spec(inp, inp_layout)
             
         pipeline_spec = input_pipelines + mixer_spec + [
+            "! %s " % output_mode['filter'],
             "! xvimagesink name=view_sink sync=false"
         ]
 
         pipeline_spec = " ".join(pipeline_spec)
+        print pipeline_spec
 
         self.pipeline = Gst.parse_launch( pipeline_spec )
 
@@ -154,13 +173,31 @@ class Capture(SimpleGSTGTKApp):
     def make_src_branch_spec(self, device, layout):
         device['w'] = layout['w']
         device['h'] = layout['h']
+        textoverlay = "! textoverlay name=\"{name}_textoverlay\" font-desc=\"Sans Bold 24\" text=\"{title}\" color=0xff90ff00 auto-resize=false shaded-background=true x-absolute=20 y-absolute=20"
+        tee = "! tee name=\"{name}_rec_tee\""
+        scope = [
+            "! audioconvert",
+            "! wavescope shader=0 style=lines",
+            "! video/x-raw, format=BGRx, width={w}, height={h}, framerate={src[caps][framerate]}",
+            "! videorate",
+        ]
         if device['src']['type'] == 'decklinkvideosrc':
             spec = [
               "decklinkvideosrc mode={src[mode]} connection={src[connection]} device-number={src[device]}",
                 "! videoconvert",
                 "! videoscale",
                 "! video/x-raw, width={w}, height={h}",
-                "! textoverlay font-desc=\"Sans Bold 24\" text=\"{title}\" color=0xff90ff00",
+                textoverlay,
+                tee,
+                "! queue",
+                "! mix.sink_{index}",
+            ]
+        elif device['src']['type'] == 'decklinkaudiosrc':
+            spec = [
+              "decklinkaudiosrc connection={src[connection]} device-number={src[device]}",
+              ] + scope + [
+                textoverlay,
+                tee,
                 "! queue",
                 "! mix.sink_{index}",
             ]
@@ -170,7 +207,17 @@ class Capture(SimpleGSTGTKApp):
                 "! videoconvert",
                 "! videoscale",
                 "! video/x-raw, width={w}, height={h}",
-                "! textoverlay font-desc=\"Sans Bold 24\" text=\"{title}\" color=0xff90ff00",
+                textoverlay,
+                tee,
+                "! queue",
+                "! mix.sink_{index}"
+            ]
+        elif device['src']['type'] == 'alsa':
+            spec = [
+               "alsasrc device=\"{src[device]}\" do-timestamp=true",
+              ] + scope + [
+                textoverlay,
+                tee,
                 "! queue",
                 "! mix.sink_{index}"
             ]
@@ -237,5 +284,6 @@ if __name__=="__main__":
         Gtk.main()
     finally:
         # Free resources if mainloop dies
-        c1.pipeline.set_state(Gst.State.NULL)
+        # c1.pipeline.set_state(Gst.State.NULL)
+        pass
 
