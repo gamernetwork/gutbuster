@@ -1,5 +1,9 @@
+from defaults import *
+
 OUTPUT_MODE="1080p30"
 CARD_MODE="1080p30"
+
+USE_VAAPI=True
 
 INPUTS=[
     {
@@ -50,4 +54,11 @@ LAYOUT=[
     { "input": "1", "w": 480, "h": 270 },
     { "input": "2", "w": 480, "h": 270 },
     { "input": "3", "w": 480, "h": 270 },
+]
+RECORDINGS=[
+    { "input": "mix", },
+    { "input": "0", },
+    { "input": "1", },
+    { "input": "2", },
+    { "input": "3", },
 ]

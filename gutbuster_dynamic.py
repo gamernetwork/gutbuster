@@ -184,17 +184,18 @@ class Capture(SimpleGSTGTKApp):
         bin_spec = " ".join(vid_capture)
             #"{name}_rec_tee.",
         logging.debug(bin_spec)
-        self.bins[inputname] = Gst.parse_launch(bin_spec)
+        self.bins[inputname] = Gst.parse_bin_from_description(bin_spec, True)
 
         queue = Gst.ElementFactory.make('queue')
         self.pipeline.add(queue)
         self.pipeline.add(self.bins[inputname])
 
         tee = self.pipeline.get_by_name('%s_rec_tee' % inputname)
-        #self.bins[inputname].set_state(Gst.State.PLAYING)
-        #self.bins[inputname].sync_state_with_parent()
+        self.pipeline.set_state(Gst.State.PAUSED)
         tee.link(queue)
         queue.link(self.bins[inputname])
+        self.bins[inputname].set_state(Gst.State.PLAYING)
+        #self.bins[inputname].sync_state_with_parent()
 
 
         overlay = self.pipeline.get_by_name('%s_textoverlay' % inputname)
@@ -269,9 +270,9 @@ class Capture(SimpleGSTGTKApp):
             spec = [
               "decklinkaudiosrc connection={src[connection]} device-number={src[device]}",
                 tee,
+                "! queue",
               ] + scope + [
                 textoverlay,
-                "! queue",
                 "! mix.sink_{index}",
             ]
         elif device['src']['type'] == 'test':
@@ -290,9 +291,9 @@ class Capture(SimpleGSTGTKApp):
             spec = [
                "alsasrc device=\"{src[device]}\" do-timestamp=true",
                 tee,
+                "! queue",
               ] + scope + [
                 textoverlay,
-                "! queue",
                 "! mix.sink_{index}"
             ]
         else:
@@ -360,9 +361,9 @@ if __name__=="__main__":
 
     try:
         c1 = Capture(inps, output_mode, config.LAYOUT)
-        #GObject.timeout_add(3000, c1.start_recording)
-        #GObject.timeout_add(6000, c1.stop_recording)
-        c1.start_recording()
+        GObject.timeout_add(3000, c1.start_recording)
+        GObject.timeout_add(6000, c1.stop_recording)
+        #c1.start_recording()
         c1.run()
         Gtk.main()
     finally:

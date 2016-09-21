@@ -1,3 +1,5 @@
+from defaults import *
+
 OUTPUT_MODE="1080p60"
 CARD_MODE="1080p30"
 

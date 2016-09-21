@@ -164,43 +164,46 @@ class Capture(SimpleGSTGTKApp):
     def start_recording(self):
         logging.debug("Start recording")
         # how to dynamically set a property
-        inputname = "0"
+        for rec in self.recordings:
+            self.record_input(rec['input'])
+
+    def record_input(self, inputname):
         vals = self.get_input(inputname)
         vals['index'] = datetime.datetime.now().strftime('%a_%H:%M.%S')
         vals['fileprefix'] = 'monk_' + vals['index']
-        vid_capture = [
-              #"queue",
-              #"! valve drop=false name=\"{name}_rec_valve\"",
-              #"! vaapipostproc scale-method=hq",
+        if self.use_vaapi:
+            enc = [
+              "vaapipostproc scale-method=hq",
+              "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
+              "! vaapih264enc init-qp=16 keyframe-period=120",
+            ]
+        else:
+            enc = [
               "videoconvert",
               "! videoscale",
               "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
-              #"! vaapih264enc init-qp=16 keyframe-period=120",
               "! x264enc speed-preset=ultrafast",
+            ]
+        vid_capture = [
+              ] + enc + [
               "! mpegtsmux",
               "! filesink location={fileprefix}_{name}.ts",
         ]
         vid_capture = [l.format(**vals) for l in vid_capture]
         bin_spec = " ".join(vid_capture)
-            #"{name}_rec_tee.",
         logging.debug(bin_spec)
-        self.bins[inputname] = Gst.parse_launch(bin_spec)
+        self.bins[inputname] = Gst.parse_bin_from_description(bin_spec, True)
 
         queue = Gst.ElementFactory.make('queue')
         self.pipeline.add(queue)
         self.pipeline.add(self.bins[inputname])
 
         tee = self.pipeline.get_by_name('%s_rec_tee' % inputname)
-        #self.bins[inputname].set_state(Gst.State.PLAYING)
-        #self.bins[inputname].sync_state_with_parent()
         tee.link(queue)
         queue.link(self.bins[inputname])
 
-
         overlay = self.pipeline.get_by_name('%s_textoverlay' % inputname)
         overlay.set_property("color", 0xffff8060)
-        #valve = self.pipeline.get_by_name('%s_rec_valve' % inputname)
-        #valve.set_property('drop', False)
 
     def build_pipeline(self):
         # decklinkvideosrc mode=auto connection=hdmi device-number=$DEVICE ! \
@@ -223,11 +226,13 @@ class Capture(SimpleGSTGTKApp):
 
         self.pipeline = Gst.parse_launch( pipeline_spec )
 
-    def __init__(self, inputs, output_mode, layout):
+    def __init__(self, inputs, output_mode, layout, recordings, use_vaapi=False):
         self.build_gui('gutbuster.ui')
         self.inputs = inputs
         self.output_mode = output_mode
         self.layout = layout
+        self.recordings = recordings
+        self.use_vaapi = use_vaapi
         self.build_pipeline()
         self.setup_messaging()
         self.bins = {}
@@ -359,7 +364,7 @@ if __name__=="__main__":
     output_mode = caps_from_mode(config.OUTPUT_MODE)
 
     try:
-        c1 = Capture(inps, output_mode, config.LAYOUT)
+        c1 = Capture(inps, output_mode, config.LAYOUT, config.RECORDINGS, config.USE_VAAPI)
         #GObject.timeout_add(3000, c1.start_recording)
         #GObject.timeout_add(6000, c1.stop_recording)
         c1.start_recording()
