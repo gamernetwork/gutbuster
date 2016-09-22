@@ -2,6 +2,7 @@ from defaults import *
 
 OUTPUT_MODE="1080p30"
 CARD_MODE="1080p30"
+FILE_PREFIX="/home/mark/egx/capture/capture_"
 
 USE_VAAPI=True
 

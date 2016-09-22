@@ -130,6 +130,7 @@ class SimpleGSTGTKApp:
                 #print('live prepare-window-handle')
                 msg.src.set_property('force-aspect-ratio', True)
                 msg.src.set_window_handle(self.view_xid)
+
     def on_error(self, bus, msg):
         print('on_error():', msg.parse_error())
 
@@ -170,7 +171,7 @@ class Capture(SimpleGSTGTKApp):
     def record_input(self, inputname):
         vals = self.get_input(inputname)
         vals['index'] = datetime.datetime.now().strftime('%a_%H:%M.%S')
-        vals['fileprefix'] = 'monk_' + vals['index']
+        vals['file_prefix'] = self.file_prefix + vals['index']
         if self.use_vaapi:
             enc = [
               "vaapipostproc scale-method=hq",
@@ -187,7 +188,7 @@ class Capture(SimpleGSTGTKApp):
         vid_capture = [
               ] + enc + [
               "! mpegtsmux",
-              "! filesink location={fileprefix}_{name}.ts",
+              "! filesink location={file_prefix}_{name}.ts",
         ]
         vid_capture = [l.format(**vals) for l in vid_capture]
         bin_spec = " ".join(vid_capture)
@@ -203,6 +204,7 @@ class Capture(SimpleGSTGTKApp):
         queue.link(self.bins[inputname])
 
         overlay = self.pipeline.get_by_name('%s_textoverlay' % inputname)
+        overlay.set_property("text", inputname + " (REC)")
         overlay.set_property("color", 0xffff8060)
 
     def build_pipeline(self):
@@ -226,12 +228,13 @@ class Capture(SimpleGSTGTKApp):
 
         self.pipeline = Gst.parse_launch( pipeline_spec )
 
-    def __init__(self, inputs, output_mode, layout, recordings, use_vaapi=False):
+    def __init__(self, inputs, output_mode, layout, recordings, file_prefix, use_vaapi=False):
         self.build_gui('gutbuster.ui')
         self.inputs = inputs
         self.output_mode = output_mode
         self.layout = layout
         self.recordings = recordings
+        self.file_prefix = file_prefix
         self.use_vaapi = use_vaapi
         self.build_pipeline()
         self.setup_messaging()
@@ -250,7 +253,7 @@ class Capture(SimpleGSTGTKApp):
         vals = device
         vals['w'] = layout['w']
         vals['h'] = layout['h']
-        textoverlay = "! textoverlay name=\"{name}_textoverlay\" font-desc=\"Sans Bold 24\" text=\"{title}\" color=0xff90ff00 auto-resize=false shaded-background=true x-absolute=20 y-absolute=20"
+        textoverlay = "! textoverlay name=\"{name}_textoverlay\" font-desc=\"Sans Bold 24\" text=\"{title}\" color=0xff90ff00 auto-resize=false shaded-background=true "
         tee = "! tee name=\"{name}_rec_tee\" ! queue "
         scope = [
             "! audioconvert",
@@ -364,7 +367,7 @@ if __name__=="__main__":
     output_mode = caps_from_mode(config.OUTPUT_MODE)
 
     try:
-        c1 = Capture(inps, output_mode, config.LAYOUT, config.RECORDINGS, config.USE_VAAPI)
+        c1 = Capture(inps, output_mode, config.LAYOUT, config.RECORDINGS, config.FILE_PREFIX, config.USE_VAAPI)
         #GObject.timeout_add(3000, c1.start_recording)
         #GObject.timeout_add(6000, c1.stop_recording)
         c1.start_recording()
