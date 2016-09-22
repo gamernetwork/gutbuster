@@ -1,12 +1,13 @@
-from defaults import *
-
 OUTPUT_MODE="1080p60"
-CARD_MODE="1080p30"
+CARD_MODE="1080p60"
+
+USE_VAAPI=True
+FILE_PREFIX="/media/mark/capture/EGX/EGX2016/capture_"
 
 INPUTS=[
 	{
-		"name": "0",
-		"title": "0",
+		"name": "wide",
+		"title": "WIDE",
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
@@ -15,8 +16,8 @@ INPUTS=[
 		},
 	},
 	{
-		"name": "1",
-		"title": "1",
+		"name": "audience",
+		"title": "AUDIENCE",
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
@@ -25,8 +26,8 @@ INPUTS=[
 		},
 	},
 	{
-		"name": "2",
-		"title": "2",
+		"name": "head",
+		"title": "HEAD
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
@@ -35,8 +36,8 @@ INPUTS=[
 		},
 	},
 	{
-		"name": "3",
-		"title": "3",
+		"name": "playout",
+		"title": "PLAYOUT",
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
@@ -85,19 +86,17 @@ INPUTS=[
 
 RECORDINGS=[
     { "input": "mix", },
-    { "input": "0", },
-    { "input": "1", },
-    { "input": "2", },
-    { "input": "3", },
+    { "input": "head", },
+    { "input": "audience", },
+    { "input": "wide", },
 ]
-
 
 LAYOUT=[
 	{ "input": "mix", "w": 1440, "h": 810, "x": 0, "y": 0 },
-	{ "input": "0", "w": 480, "h": 270, "x": 0, "y": 810 },
-	{ "input": "1", "w": 480, "h": 270 },
-	{ "input": "2", "w": 480, "h": 270 },
-	{ "input": "3", "w": 480, "h": 270 },
+	{ "input": "head", "w": 480, "h": 270, "x": 0, "y": 810 },
+	{ "input": "audience", "w": 480, "h": 270 },
+	{ "input": "wide", "w": 480, "h": 270 },
+	{ "input": "playout", "w": 480, "h": 270 },
 	{ "input": "roomaudio", "w": 480, "h": 405, "x": 1440, "y": 405 },
 	{ "input": "mixaudio", "w": 480, "h": 405, "x": 1440, "y": 0 },
 ]
