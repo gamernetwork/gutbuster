@@ -175,6 +175,7 @@ class Capture(SimpleGSTGTKApp):
         device['h'] = layout['h']
         textoverlay = "! textoverlay name=\"{name}_textoverlay\" font-desc=\"Sans Bold 24\" text=\"{title}\" color=0xff90ff00 auto-resize=false shaded-background=true x-absolute=20 y-absolute=20"
         tee = "! tee name=\"{name}_rec_tee\""
+        srctee = "{name}_rec_tee. "
         scope = [
             "! audioconvert",
             "! wavescope shader=0 style=lines",
@@ -200,6 +201,11 @@ class Capture(SimpleGSTGTKApp):
                 tee,
                 "! queue",
                 "! mix.sink_{index}",
+                srctee,
+                "! queue",
+                "! audioconvert ",
+                "! alsasink device=\"plughw:CARD=USB\""
+
             ]
         elif device['src']['type'] == 'test':
             spec = [

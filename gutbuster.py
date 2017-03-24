@@ -172,26 +172,41 @@ class Capture(SimpleGSTGTKApp):
         vals = self.get_input(inputname)
         vals['index'] = datetime.datetime.now().strftime('%a_%H:%M.%S')
         vals['file_prefix'] = self.file_prefix + vals['index']
-        if self.use_vaapi:
-            enc = [
-              "vaapipostproc scale-method=hq",
-              "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
-              "! vaapih264enc init-qp=16 keyframe-period=120",
+        if vals['src']['type'] == 'decklinkvideosrc':
+            if self.use_vaapi:
+                enc = [
+                  "vaapipostproc scale-method=hq",
+                  "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
+                  "! vaapih264enc init-qp=23 keyframe-period=120",
+                ]
+            else:
+                enc = [
+                  "videoconvert",
+                  "! videoscale",
+                  "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
+                  "! x264enc pass=4 quantizer=23 speed-preset=ultrafast",
+                ]
+            capture_spec = [
+                  ] + enc + [
+                  "! mpegtsmux",
+                  "! filesink location={file_prefix}_{name}.ts",
+            ]
+        elif vals['src']['type'] == 'decklinkaudiosrc':
+            capture_spec = [
+                "audioconvert",
+                "! lamemp3enc quality=1 target=quality encoding-engine-quality=standard",
+                "! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
+            ]
+        elif vals['src']['type'] == 'alsa':
+            capture_spec = [
+                "audioconvert",
+                "! lamemp3enc quality=1 target=quality encoding-engine-quality=standard",
+                "! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
             ]
         else:
-            enc = [
-              "videoconvert",
-              "! videoscale",
-              "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
-              "! x264enc speed-preset=ultrafast",
-            ]
-        vid_capture = [
-              ] + enc + [
-              "! mpegtsmux",
-              "! filesink location={file_prefix}_{name}.ts",
-        ]
-        vid_capture = [l.format(**vals) for l in vid_capture]
-        bin_spec = " ".join(vid_capture)
+            raise Exception('Unknown device type ' + device['src']['type'])
+        capture_spec = [l.format(**vals) for l in capture_spec]
+        bin_spec = " ".join(capture_spec)
         logging.debug(bin_spec)
         self.bins[inputname] = Gst.parse_bin_from_description(bin_spec, True)
 
@@ -255,6 +270,8 @@ class Capture(SimpleGSTGTKApp):
         vals['h'] = layout['h']
         textoverlay = "! textoverlay name=\"{name}_textoverlay\" font-desc=\"Sans Bold 24\" text=\"{title}\" color=0xff90ff00 auto-resize=false shaded-background=true "
         tee = "! tee name=\"{name}_rec_tee\" ! queue "
+        teesrc = "{name}_rec_tee. ! queue "
+
         scope = [
             "! audioconvert",
             "! wavescope shader=0 style=lines",
@@ -281,6 +298,9 @@ class Capture(SimpleGSTGTKApp):
                 textoverlay,
                 "! queue",
                 "! mix.sink_{index}",
+                teesrc,
+                " ! audioconvert ",
+                " ! alsasink sync=false device=\"plughw:CARD=USB\""
             ]
         elif device['src']['type'] == 'test':
             spec = [

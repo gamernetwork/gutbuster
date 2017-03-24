@@ -27,7 +27,7 @@ INPUTS=[
 	},
 	{
 		"name": "head",
-		"title": "HEAD
+		"title": "HEAD",
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
@@ -42,7 +42,7 @@ INPUTS=[
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
 			"device": "3",
-			"mode": CARD_MODE,
+			"mode": "1080p30",
 		},
 	},
 	{
@@ -89,6 +89,8 @@ RECORDINGS=[
     { "input": "head", },
     { "input": "audience", },
     { "input": "wide", },
+    { "input": "roomaudio", },
+    { "input": "mixaudio", },
 ]
 
 LAYOUT=[
