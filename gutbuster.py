@@ -280,7 +280,7 @@ class Capture(SimpleGSTGTKApp):
         ]
         if device['src']['type'] == 'decklinkvideosrc':
             spec = [
-              "decklinkvideosrc mode={src[mode]} connection={src[connection]} device-number={src[device]}",
+              "decklinkvideosrc do-timestamp=true mode={src[mode]} connection={src[connection]} device-number={src[device]}",
                 "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
                 tee,
                 "! queue",
@@ -292,7 +292,7 @@ class Capture(SimpleGSTGTKApp):
             ]
         elif device['src']['type'] == 'decklinkaudiosrc':
             spec = [
-              "decklinkaudiosrc connection={src[connection]} device-number={src[device]}",
+              "decklinkaudiosrc do-timestamp=true connection={src[connection]} device-number={src[device]}",
                 tee,
               ] + scope + [
                 textoverlay,
