@@ -4,7 +4,7 @@ gst-launch-1.0 -e \
     ! videoconvert \
     ! videoscale \
     ! video/x-raw, width=1920, height=1080 \
-    ! x264enc tune=zerolatency pass=cbr bitrate=4000 speed-preset=ultrafast \
+    ! x264enc key-int-max=60 tune=zerolatency pass=cbr bitrate=4000 speed-preset=ultrafast \
     ! tee name=t \
     ! queue \
     ! flvmux streamable=true name=mux \
@@ -33,3 +33,4 @@ gst-launch-1.0 -e \
 #                  ! video/x-raw, width=1920, height=1080
 #                  ! vaapih264enc init-qp=23 keyframe-period=120
     #! rtmpsink location="rtmp://live-lhr.twitch.tv/app/live_49382179_Zrbr9wIynJZrp7BOt7HzQPtX4XcqaQ?bandwidthtest=true" \
+    #REAL ONE ! rtmpsink location="rtmp://live-lhr.twitch.tv/app/live_49382179_Zrbr9wIynJZrp7BOt7HzQPtX4XcqaQ" \

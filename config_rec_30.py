@@ -75,15 +75,15 @@ INPUTS=[
 #			"mode": "1080p30",
 #		},
 #	},
-#	{
-#		"name": "roomaudio",
-#		"title": "ROOM",
-#		"src": {
-#			"type": "alsa",
-#			"device": "hw:CARD=USB",
-#			"mode": "1080p30",
-#		},
-#	},
+	{
+		"name": "roomaudio",
+		"title": "ROOM",
+		"src": {
+			"type": "alsa",
+			"device": "hw:CARD=USB",
+			"mode": "1080p30",
+		},
+	},
 ]
 
 RECORDINGS=[
@@ -91,6 +91,7 @@ RECORDINGS=[
     { "input": "wide", },
     { "input": "head", },
     { "input": "playout", },
+    { "input": "roomaudio", },
 ]
 
 LAYOUT=[
@@ -99,6 +100,6 @@ LAYOUT=[
 	{ "input": "head", "w": 480, "h": 270 },
 	{ "input": "wide", "w": 480, "h": 270 },
 	{ "input": "playout", "w": 480, "h": 270 },
-	#{ "input": "roomaudio", "w": 480, "h": 405, "x": 1440, "y": 405 },
+	{ "input": "roomaudio", "w": 480, "h": 405, "x": 1440, "y": 405 },
 	{ "input": "mixaudio", "w": 480, "h": 405, "x": 1440, "y": 0 },
 ]
