@@ -4,7 +4,7 @@ gst-launch-1.0 -e \
     ! videoconvert \
     ! videoscale \
     ! video/x-raw, width=1920, height=1080 \
-    ! x264enc bframes=0 key-int-max=60 tune=zerolatency pass=cbr bitrate=4000 speed-preset=ultrafast \
+    ! x264enc bframes=0 key-int-max=60 tune=zerolatency pass=cbr bitrate=3500 speed-preset=superfast \
     ! tee name=t \
     ! queue \
     ! flvmux streamable=true name=mux \
