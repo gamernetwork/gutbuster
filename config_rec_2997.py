@@ -1,10 +1,10 @@
-OUTPUT_MODE="1080p30"
-CARD_MODE="1080p30"
+OUTPUT_MODE="1080p2997"
+CARD_MODE="1080p2997"
 
 DEBUG=True
 
 USE_VAAPI=True
-FILE_PREFIX="/media/mark/CAPTURE002/EGX/REZZED2017/capture_"
+FILE_PREFIX="/media/mark/CAPTURE001/EGX/EGX2017/capture_"
 
 INPUTS=[
 	{
@@ -44,7 +44,7 @@ INPUTS=[
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
 			"device": "3",
-			"mode": "1080p30",
+			"mode": "1080p2997",
 		},
 	},
 	{
@@ -54,7 +54,7 @@ INPUTS=[
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
 			"device": "7",
-			"mode": "1080p30",
+			"mode": "1080p2997",
 		},
 	},
 	{
@@ -64,7 +64,7 @@ INPUTS=[
 			"type": "decklinkaudiosrc",
 			"connection": "embedded",
 			"device": "7",
-			"mode": "1080p30",
+			"mode": "1080p2997",
 		},
 	},
 #	{
@@ -72,7 +72,7 @@ INPUTS=[
 #		"title": "TEST",
 #		"src": {
 #			"type": "test",
-#			"mode": "1080p30",
+#			"mode": "1080p2997",
 #		},
 #	},
 	{
@@ -81,7 +81,7 @@ INPUTS=[
 		"src": {
 			"type": "alsa",
 			"device": "hw:CARD=USB",
-			"mode": "1080p30",
+			"mode": "1080p2997",
 		},
 	},
 ]

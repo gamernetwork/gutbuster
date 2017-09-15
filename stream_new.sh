@@ -8,7 +8,7 @@ gst-launch-1.0 -e \
     ! tee name=t \
     ! queue \
     ! flvmux streamable=true name=mux \
-    ! rtmpsink location="rtmp://live-lhr.twitch.tv/app/live_49236445_gfLQWmuxEpuo7pWgJlokyBInEB12tJ" \
+    ! rtmpsink location="rtmp://live-lhr.twitch.tv/app/live_49382179_Zrbr9wIynJZrp7BOt7HzQPtX4XcqaQ" \
     decklinkaudiosrc connection=embedded device-number=4 \
     ! audioconvert \
     ! avenc_aac compliance=1 bitrate=160000 \
@@ -34,3 +34,4 @@ gst-launch-1.0 -e \
 #                  ! vaapih264enc init-qp=23 keyframe-period=120
     #! rtmpsink location="rtmp://live-lhr.twitch.tv/app/live_49382179_Zrbr9wIynJZrp7BOt7HzQPtX4XcqaQ?bandwidthtest=true" \
     #REAL ONE ! rtmpsink location="rtmp://live-lhr.twitch.tv/app/live_49382179_Zrbr9wIynJZrp7BOt7HzQPtX4XcqaQ" \
+    #! rtmpsink location="rtmp://live-lhr.twitch.tv/app/live_49236445_gfLQWmuxEpuo7pWgJlokyBInEB12tJ" \
