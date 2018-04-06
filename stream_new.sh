@@ -1,5 +1,5 @@
 gst-launch-1.0 -e \
-    decklinkvideosrc mode=1080p30 connection=sdi device-number=4 \
+    decklinkvideosrc mode=1080p2997 connection=sdi device-number=4 \
     ! video/x-raw, width=1920, height=1080 \
     ! videoconvert \
     ! videoscale \
@@ -8,7 +8,7 @@ gst-launch-1.0 -e \
     ! tee name=t \
     ! queue \
     ! flvmux streamable=true name=mux \
-    ! rtmpsink location="rtmp://live-lhr.twitch.tv/app/live_49382179_Zrbr9wIynJZrp7BOt7HzQPtX4XcqaQ" \
+    ! rtmpsink location="rtmp://live-lhr.twitch.tv/app/live_49382179_Zrbr9wIynJZrp7BOt7HzQPtX4XcqaQ?bandwidthtest=true" \
     decklinkaudiosrc connection=embedded device-number=4 \
     ! audioconvert \
     ! avenc_aac compliance=1 bitrate=160000 \

@@ -203,6 +203,12 @@ class Capture(SimpleGSTGTKApp):
                 "! lamemp3enc quality=1 target=quality encoding-engine-quality=standard",
                 "! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
             ]
+        elif vals['src']['type'] == 'pulse':
+            capture_spec = [
+                "audioconvert",
+                "! lamemp3enc quality=1 target=quality encoding-engine-quality=standard",
+                "! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
+            ]
         else:
             raise Exception('Unknown device type ' + device['src']['type'])
         capture_spec = [l.format(**vals) for l in capture_spec]
@@ -298,10 +304,13 @@ class Capture(SimpleGSTGTKApp):
                 textoverlay,
                 "! queue",
                 "! mix.sink_{index}",
+            ]
+            if device['monitor'] == True:
+              spec = spec + [
                 teesrc,
                 " ! audioconvert ",
-                " ! alsasink sync=false device=\"plughw:CARD=USB\""
-            ]
+                " ! pulsesink"
+              ]
         elif device['src']['type'] == 'test':
             spec = [
               "videotestsrc is-live=true",
@@ -321,7 +330,16 @@ class Capture(SimpleGSTGTKApp):
               ] + scope + [
                 textoverlay,
                 "! queue",
-                "! mix.sink_{index}"
+                "! mix.sink_{index}",
+            ]
+        elif device['src']['type'] == 'pulse':
+            spec = [
+               "pulsesrc",
+                tee,
+              ] + scope + [
+                textoverlay,
+                "! queue",
+                "! mix.sink_{index}",
             ]
         else:
             raise Exception('Unknown device type ' + device['src']['type'])
