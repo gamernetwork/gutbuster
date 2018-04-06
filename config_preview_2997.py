@@ -60,6 +60,7 @@ INPUTS=[
 	{
 		"name": "mixaudio",
 		"title": "BROADCAST",
+        "monitor": False,
 		"src": {
 			"type": "decklinkaudiosrc",
 			"connection": "embedded",
@@ -79,8 +80,7 @@ INPUTS=[
 		"name": "roomaudio",
 		"title": "ROOM",
 		"src": {
-			"type": "alsa",
-			"device": "hw:CARD=USB",
+			"type": "pulse",
 			"mode": CARD_MODE,
 		},
 	},
