@@ -177,20 +177,28 @@ class Capture(SimpleGSTGTKApp):
                 enc = [
                   "vaapipostproc scale-method=hq",
                   "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
-                  "! vaapih264enc init-qp=23 keyframe-period=120",
+                  "! vaapih264enc init-qp=18 keyframe-period=120",
                 ]
             else:
                 enc = [
                   "videoconvert",
                   "! videoscale",
                   "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
-                  "! x264enc pass=4 quantizer=23 speed-preset=ultrafast",
+                  "! x264enc pass=4 quantizer=18 speed-preset=ultrafast",
                 ]
-            capture_spec = [
-                  ] + enc + [
-                  "! mpegtsmux",
-                  "! filesink location={file_prefix}_{name}.ts",
-            ]
+            if self.container_format == "ts":
+                capture_spec = [
+                      ] + enc + [
+                      "! mpegtsmux",
+                      "! filesink location={file_prefix}_{name}.ts",
+                ]
+            elif self.container_format == "mkv":
+                capture_spec = [
+                      ] + enc + [
+                      "! matroskamux",
+                      "! filesink location={file_prefix}_{name}.mkv",
+                ]
+                
         elif vals['src']['type'] == 'decklinkaudiosrc':
             capture_spec = [
                 "audioconvert",
@@ -257,6 +265,7 @@ class Capture(SimpleGSTGTKApp):
         self.recordings = recordings
         self.file_prefix = file_prefix
         self.use_vaapi = use_vaapi
+        self.container_format = "ts"
         self.build_pipeline()
         self.setup_messaging()
         self.bins = {}
@@ -286,7 +295,7 @@ class Capture(SimpleGSTGTKApp):
         ]
         if device['src']['type'] == 'decklinkvideosrc':
             spec = [
-              "decklinkvideosrc do-timestamp=true mode={src[mode]} connection={src[connection]} device-number={src[device]}",
+              "decklinkvideosrc timecode-format=6 do-timestamp=false mode={src[mode]} connection={src[connection]} device-number={src[device]}",
                 "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
                 tee,
                 "! queue",
@@ -298,7 +307,7 @@ class Capture(SimpleGSTGTKApp):
             ]
         elif device['src']['type'] == 'decklinkaudiosrc':
             spec = [
-              "decklinkaudiosrc do-timestamp=true connection={src[connection]} device-number={src[device]}",
+              "decklinkaudiosrc do-timestamp=false connection={src[connection]} device-number={src[device]}",
                 tee,
               ] + scope + [
                 textoverlay,
@@ -325,7 +334,7 @@ class Capture(SimpleGSTGTKApp):
             ]
         elif device['src']['type'] == 'alsa':
             spec = [
-               "alsasrc device=\"{src[device]}\" do-timestamp=true",
+               "alsasrc device=\"{src[device]}\" do-timestamp=false",
                 tee,
               ] + scope + [
                 textoverlay,

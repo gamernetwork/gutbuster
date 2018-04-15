@@ -8,8 +8,8 @@ FILE_PREFIX="/media/mark/capture002/EGX/EGX2016/capture_"
 
 INPUTS=[
 	{
-		"name": "wide",
-		"title": "WIDE",
+		"name": "head",
+		"title": "HEAD",
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
@@ -18,8 +18,8 @@ INPUTS=[
 		},
 	},
 	{
-		"name": "audience",
-		"title": "AUDIENCE",
+		"name": "wide",
+		"title": "WIDE",
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
@@ -28,8 +28,8 @@ INPUTS=[
 		},
 	},
 	{
-		"name": "head",
-		"title": "HEAD",
+		"name": "audience",
+		"title": "AUDIENCE",
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
@@ -60,7 +60,7 @@ INPUTS=[
 	{
 		"name": "mixaudio",
 		"title": "BROADCAST",
-        "monitor": False,
+        "monitor": True,
 		"src": {
 			"type": "decklinkaudiosrc",
 			"connection": "embedded",
@@ -91,9 +91,10 @@ RECORDINGS=[
 
 LAYOUT=[
 	{ "input": "mix", "w": 1440, "h": 810, "x": 0, "y": 0 },
-	{ "input": "audience", "w": 480, "h": 270, "x": 0, "y": 810 },
-	{ "input": "head", "w": 480, "h": 270 },
+	{ "input": "head", "w": 480, "h": 270, "x": 0, "y": 810 },
 	{ "input": "wide", "w": 480, "h": 270 },
+	{ "input": "audience", "w": 480, "h": 270 },
+	#{ "input": "foo", "w": 480, "h": 270 },
 	{ "input": "playout", "w": 480, "h": 270 },
 	{ "input": "mixaudio", "w": 240, "h": 200, "x": 1440, "y": 0 },
 	{ "input": "roomaudio", "w": 240, "h": 200,},
