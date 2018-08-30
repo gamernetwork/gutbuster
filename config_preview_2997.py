@@ -6,6 +6,8 @@ DEBUG=True
 USE_VAAPI=True
 FILE_PREFIX="/media/mark/capture002/EGX/EGX2016/capture_"
 
+AUDIO_MONITOR_DEVICE="hw:CARD=USB,DEV=0"
+
 INPUTS=[
 	{
 		"name": "head",
@@ -13,7 +15,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "0",
+			"device": "5",
 			"mode": CARD_MODE,
 		},
 	},
@@ -23,7 +25,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "1",
+			"device": "6",
 			"mode": CARD_MODE,
 		},
 	},
@@ -33,7 +35,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "2",
+			"device": "4",
 			"mode": CARD_MODE,
 		},
 	},
@@ -43,7 +45,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "3",
+			"device": "7",
 			"mode": CARD_MODE,
 		},
 	},
@@ -53,18 +55,18 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "7",
+			"device": "3",
 			"mode": CARD_MODE,
 		},
 	},
 	{
 		"name": "mixaudio",
 		"title": "BROADCAST",
-        "monitor": True,
+                "monitor": False,
 		"src": {
 			"type": "decklinkaudiosrc",
 			"connection": "embedded",
-			"device": "7",
+			"device": "3",
 			"mode": CARD_MODE,
 		},
 	},
@@ -78,9 +80,11 @@ INPUTS=[
 #	},
 	{
 		"name": "roomaudio",
+                "monitor": False,
 		"title": "ROOM",
 		"src": {
-			"type": "pulse",
+			"type": "alsa",
+                        "device": "hw:CARD=USB,DEV=0",
 			"mode": CARD_MODE,
 		},
 	},

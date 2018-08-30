@@ -177,7 +177,9 @@ class Capture(SimpleGSTGTKApp):
                 enc = [
                   "vaapipostproc scale-method=hq",
                   "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
-                  "! vaapih264enc init-qp=18 keyframe-period=120",
+                  "! vaapih264enc init-qp=18 quality-level=1 keyframe-period=120",
+                  #"! vaapih264enc init-qp=18 quality-level=1 keyframe-period=120",
+                  #"! vaapih265enc keyframe-period=120",
                 ]
             else:
                 enc = [
@@ -190,32 +192,42 @@ class Capture(SimpleGSTGTKApp):
                 capture_spec = [
                       ] + enc + [
                       "! mpegtsmux",
-                      "! filesink location={file_prefix}_{name}.ts",
+                      "! filesink location={file_prefix}_{name}_h264.ts",
                 ]
             elif self.container_format == "mkv":
                 capture_spec = [
                       ] + enc + [
                       "! matroskamux",
-                      "! filesink location={file_prefix}_{name}.mkv",
+                      "! filesink location={file_prefix}_{name}_h264.mkv",
                 ]
                 
         elif vals['src']['type'] == 'decklinkaudiosrc':
             capture_spec = [
                 "audioconvert",
-                "! lamemp3enc quality=1 target=quality encoding-engine-quality=standard",
-                "! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
+                #"! lamemp3enc quality=1 target=quality encoding-engine-quality=high",
+                #"! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
+                #"! mpegtsmux ! filesink location={file_prefix}_{name}_mp3.ts", 
+                "! avenc_ac3 ",
+                #"! lamemp3enc quality=1 target=quality encoding-engine-quality=high",
+                #"! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
+                "! mpegtsmux ! filesink location={file_prefix}_{name}_mp3.ts", 
             ]
         elif vals['src']['type'] == 'alsa':
             capture_spec = [
                 "audioconvert",
-                "! lamemp3enc quality=1 target=quality encoding-engine-quality=standard",
-                "! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
+                "! audioresample",
+                "! avenc_ac3 ",
+                #"! lamemp3enc quality=1 target=quality encoding-engine-quality=high",
+                #"! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
+                "! mpegtsmux ! filesink location={file_prefix}_{name}_mp3.ts", 
             ]
         elif vals['src']['type'] == 'pulse':
             capture_spec = [
                 "audioconvert",
-                "! lamemp3enc quality=1 target=quality encoding-engine-quality=standard",
-                "! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
+                "! audioresample",
+                "! lamemp3enc quality=1 target=quality encoding-engine-quality=high",
+                #"! id3v2mux ! filesink location={file_prefix}_{name}.mp3", 
+                "! mpegtsmux ! filesink location={file_prefix}_{name}_mp3.ts", 
             ]
         else:
             raise Exception('Unknown device type ' + device['src']['type'])
@@ -233,8 +245,9 @@ class Capture(SimpleGSTGTKApp):
         queue.link(self.bins[inputname])
 
         overlay = self.pipeline.get_by_name('%s_textoverlay' % inputname)
-        overlay.set_property("text", inputname + " (REC)")
-        overlay.set_property("color", 0xffff8060)
+        if overlay :
+            overlay.set_property("text", inputname + " (REC)")
+            overlay.set_property("color", 0xffff8060)
 
     def build_pipeline(self):
         # decklinkvideosrc mode=auto connection=hdmi device-number=$DEVICE ! \
@@ -257,7 +270,7 @@ class Capture(SimpleGSTGTKApp):
 
         self.pipeline = Gst.parse_launch( pipeline_spec )
 
-    def __init__(self, inputs, output_mode, layout, recordings, file_prefix, use_vaapi=False):
+    def __init__(self, inputs, output_mode, layout, recordings, file_prefix, use_vaapi, audio_monitor_device):
         self.build_gui('gutbuster.ui')
         self.inputs = inputs
         self.output_mode = output_mode
@@ -265,6 +278,7 @@ class Capture(SimpleGSTGTKApp):
         self.recordings = recordings
         self.file_prefix = file_prefix
         self.use_vaapi = use_vaapi
+        self.audio_monitor_device = audio_monitor_device
         self.container_format = "ts"
         self.build_pipeline()
         self.setup_messaging()
@@ -289,9 +303,12 @@ class Capture(SimpleGSTGTKApp):
 
         scope = [
             "! audioconvert",
-            "! wavescope shader=0 style=lines",
+            "! wavescope shader=0 style=color-lines",
+            #"! monoscope",
+            #"! spectrascope",
+            #"! video/x-raw, format=BGRx, width=256, height=128, framerate={src[caps][framerate]}",
             "! video/x-raw, format=BGRx, width={w}, height={h}, framerate={src[caps][framerate]}",
-            "! videorate",
+           # "! videorate",
         ]
         if device['src']['type'] == 'decklinkvideosrc':
             spec = [
@@ -307,7 +324,7 @@ class Capture(SimpleGSTGTKApp):
             ]
         elif device['src']['type'] == 'decklinkaudiosrc':
             spec = [
-              "decklinkaudiosrc do-timestamp=false connection={src[connection]} device-number={src[device]}",
+              "decklinkaudiosrc do-timestamp=true connection={src[connection]} device-number={src[device]}",
                 tee,
                 "! queue",
               ] + scope + [
@@ -319,7 +336,8 @@ class Capture(SimpleGSTGTKApp):
                 teesrc,
                 " ! queue ",
                 " ! audioconvert ",
-                " ! autoaudiosink sync=false"
+                #" ! audioresample ",
+                " ! alsasink device=\"" + self.audio_monitor_device + "\""
               ]
         elif device['src']['type'] == 'test':
             spec = [
@@ -335,13 +353,21 @@ class Capture(SimpleGSTGTKApp):
             ]
         elif device['src']['type'] == 'alsa':
             spec = [
-               "alsasrc device=\"{src[device]}\" do-timestamp=false",
+               "alsasrc device=\"{src[device]}\"",
                 tee,
               ] + scope + [
                 textoverlay,
                 "! queue",
                 "! mix.sink_{index}",
             ]
+            if device['monitor'] == True:
+              spec = spec + [
+                teesrc,
+                " ! queue ",
+                " ! audioconvert ",
+                " ! audioresample ",
+                " ! alsasink blocksize=65536 latency-time=100000 device=\"" + self.audio_monitor_device  + "\""
+              ]
         elif device['src']['type'] == 'pulse':
             spec = [
                "pulsesrc",
@@ -351,6 +377,13 @@ class Capture(SimpleGSTGTKApp):
                 "! queue",
                 "! mix.sink_{index}",
             ]
+            if device['monitor'] == True:
+              spec = spec + [
+                teesrc,
+                " ! queue ",
+                " ! audioconvert ",
+                " ! pulsesink"
+              ]
         else:
             raise Exception('Unknown device type ' + device['src']['type'])
         spec = [l.format(**vals) for l in spec]
@@ -415,7 +448,7 @@ if __name__=="__main__":
     output_mode = caps_from_mode(config.OUTPUT_MODE)
 
     try:
-        c1 = Capture(inps, output_mode, config.LAYOUT, config.RECORDINGS, config.FILE_PREFIX, config.USE_VAAPI)
+        c1 = Capture(inps, output_mode, config.LAYOUT, config.RECORDINGS, config.FILE_PREFIX, config.USE_VAAPI, config.AUDIO_MONITOR_DEVICE)
         #GObject.timeout_add(3000, c1.start_recording)
         #GObject.timeout_add(6000, c1.stop_recording)
         c1.start_recording()
