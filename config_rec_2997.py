@@ -4,7 +4,9 @@ CARD_MODE="1080p2997"
 DEBUG=True
 
 USE_VAAPI=True
-FILE_PREFIX="/media/mark/CAPTURE001/EGX/REZZED2018/capture_"
+FILE_PREFIX="/media/egx/CAPTURE001/EGX/REZZED2018/capture_"
+
+AUDIO_MONITOR_DEVICE="hw:CARD=USB,DEV=0"
 
 INPUTS=[
 	{
@@ -13,7 +15,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "1",
+			"device": "5",
 			"mode": CARD_MODE,
 		},
 	},
@@ -23,7 +25,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "2",
+			"device": "6",
 			"mode": CARD_MODE,
 		},
 	},
@@ -33,7 +35,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "0",
+			"device": "4",
 			"mode": CARD_MODE,
 		},
 	},
@@ -43,7 +45,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "3",
+			"device": "7",
 			"mode": CARD_MODE,
 		},
 	},
@@ -53,26 +55,28 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "7",
+			"device": "3",
 			"mode": "1080p2997",
 		},
 	},
 	{
 		"name": "mixaudio",
 		"title": "BROADCAST",
-        "monitor": True,
+                "monitor": False,
 		"src": {
 			"type": "decklinkaudiosrc",
 			"connection": "embedded",
-			"device": "7",
+			"device": "3",
 			"mode": "1080p2997",
 		},
 	},
 	{
 		"name": "roomaudio",
 		"title": "ROOM",
+                "monitor": True,
 		"src": {
-			"type": "pulse",
+			"type": "alsa",
+                        "device": "hw:CARD=USB,DEV=0",
 			"mode": "1080p2997",
 		},
 	},
@@ -84,6 +88,7 @@ RECORDINGS=[
     { "input": "proj", },
     { "input": "mix", },
     { "input": "audience", },
+    { "input": "mixaudio", },
     { "input": "roomaudio", },
 ]
 
