@@ -6,14 +6,26 @@ DEBUG=True
 USE_VAAPI=True
 FILE_PREFIX="/media/mark/capture002/EGX/EGX2016/capture_"
 
+AUDIO_MONITOR_DEVICE="hw:CARD=USB,DEV=0"
+
 INPUTS=[
+	{
+		"name": "head",
+		"title": "HEAD",
+		"src": {
+			"type": "decklinkvideosrc",
+			"connection": "sdi",
+			"device": "5",
+			"mode": CARD_MODE,
+		},
+	},
 	{
 		"name": "wide",
 		"title": "WIDE",
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "0",
+			"device": "6",
 			"mode": CARD_MODE,
 		},
 	},
@@ -23,17 +35,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "1",
-			"mode": CARD_MODE,
-		},
-	},
-	{
-		"name": "head",
-		"title": "HEAD",
-		"src": {
-			"type": "decklinkvideosrc",
-			"connection": "sdi",
-			"device": "2",
+			"device": "4",
 			"mode": CARD_MODE,
 		},
 	},
@@ -43,7 +45,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "3",
+			"device": "7",
 			"mode": CARD_MODE,
 		},
 	},
@@ -53,17 +55,18 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "7",
+			"device": "3",
 			"mode": CARD_MODE,
 		},
 	},
 	{
 		"name": "mixaudio",
 		"title": "BROADCAST",
+                "monitor": False,
 		"src": {
 			"type": "decklinkaudiosrc",
 			"connection": "embedded",
-			"device": "7",
+			"device": "3",
 			"mode": CARD_MODE,
 		},
 	},
@@ -77,10 +80,11 @@ INPUTS=[
 #	},
 	{
 		"name": "roomaudio",
+                "monitor": False,
 		"title": "ROOM",
 		"src": {
 			"type": "alsa",
-			"device": "hw:CARD=USB",
+                        "device": "hw:CARD=USB,DEV=0",
 			"mode": CARD_MODE,
 		},
 	},
@@ -91,9 +95,10 @@ RECORDINGS=[
 
 LAYOUT=[
 	{ "input": "mix", "w": 1440, "h": 810, "x": 0, "y": 0 },
-	{ "input": "audience", "w": 480, "h": 270, "x": 0, "y": 810 },
-	{ "input": "head", "w": 480, "h": 270 },
+	{ "input": "head", "w": 480, "h": 270, "x": 0, "y": 810 },
 	{ "input": "wide", "w": 480, "h": 270 },
+	{ "input": "audience", "w": 480, "h": 270 },
+	#{ "input": "foo", "w": 480, "h": 270 },
 	{ "input": "playout", "w": 480, "h": 270 },
 	{ "input": "mixaudio", "w": 240, "h": 200, "x": 1440, "y": 0 },
 	{ "input": "roomaudio", "w": 240, "h": 200,},
