@@ -176,7 +176,7 @@ class Capture(SimpleGSTGTKApp):
             if self.use_vaapi:
                 enc = [
                   "vaapipostproc scale-method=hq",
-                  "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
+                  "! video/x-raw, format=Y42B, width={src[caps][width]}, height={src[caps][height]}",
                   "! vaapih264enc init-qp=18 quality-level=1 keyframe-period=120",
                   #"! vaapih264enc init-qp=18 quality-level=1 keyframe-period=120",
                   #"! vaapih265enc keyframe-period=120",
@@ -185,7 +185,33 @@ class Capture(SimpleGSTGTKApp):
                 enc = [
                   "videoconvert",
                   "! videoscale",
-                  "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
+                  "! video/x-raw, format=Y42B, width={src[caps][width]}, height={src[caps][height]}",
+                  "! x264enc pass=4 quantizer=18 speed-preset=ultrafast",
+                ]
+            if self.container_format == "ts":
+                capture_spec = [
+                      ] + enc + [
+                      "! mpegtsmux",
+                      "! filesink location={file_prefix}_{name}_h264.ts",
+                ]
+            elif self.container_format == "mkv":
+                capture_spec = [
+                      ] + enc + [
+                      "! matroskamux",
+                      "! filesink location={file_prefix}_{name}_h264.mkv",
+                ]
+        if vals['src']['type'] == 'test':
+            if self.use_vaapi:
+                enc = [
+                  "vaapipostproc scale-method=hq",
+                  "! video/x-raw, format=Y42B, width={src[caps][width]}, height={src[caps][height]}",
+                  "! vaapih264enc init-qp=18 quality-level=1 keyframe-period=120",
+                ]
+            else:
+                enc = [
+                  "videoconvert",
+                  "! videoscale",
+                  "! video/x-raw, format=Y42B, width={src[caps][width]}, height={src[caps][height]}",
                   "! x264enc pass=4 quantizer=18 speed-preset=ultrafast",
                 ]
             if self.container_format == "ts":
@@ -230,7 +256,7 @@ class Capture(SimpleGSTGTKApp):
                 "! mpegtsmux ! filesink location={file_prefix}_{name}_mp3.ts", 
             ]
         else:
-            raise Exception('Unknown device type ' + device['src']['type'])
+            raise Exception('Unknown device type ' + vals['src']['type'])
         capture_spec = [l.format(**vals) for l in capture_spec]
         bin_spec = " ".join(capture_spec)
         logging.debug(bin_spec)
@@ -238,6 +264,7 @@ class Capture(SimpleGSTGTKApp):
 
         queue = Gst.ElementFactory.make('queue')
         self.pipeline.add(queue)
+        queue.set_property('leaky', 2)
         self.pipeline.add(self.bins[inputname])
 
         tee = self.pipeline.get_by_name('%s_rec_tee' % inputname)
@@ -298,8 +325,8 @@ class Capture(SimpleGSTGTKApp):
         vals['w'] = layout['w']
         vals['h'] = layout['h']
         textoverlay = "! textoverlay name=\"{name}_textoverlay\" font-desc=\"Sans Bold 24\" text=\"{title}\" color=0xff90ff00 auto-resize=false shaded-background=true "
-        tee = "! tee name=\"{name}_rec_tee\" ! queue "
-        teesrc = "{name}_rec_tee. ! queue "
+        tee = "! tee name=\"{name}_rec_tee\" ! queue leaky=2 "
+        teesrc = "{name}_rec_tee. ! queue leaky=2 "
 
         scope = [
             "! audioconvert",
@@ -315,7 +342,6 @@ class Capture(SimpleGSTGTKApp):
               "decklinkvideosrc timecode-format=6 do-timestamp=true mode={src[mode]} buffer-size=3 connection={src[connection]} device-number={src[device]}",
                 "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
                 tee,
-                "! queue",
                 "! videoconvert",
                 "! videoscale",
                 "! video/x-raw, width={w}, height={h}",
@@ -326,15 +352,13 @@ class Capture(SimpleGSTGTKApp):
             spec = [
               "decklinkaudiosrc do-timestamp=true connection={src[connection]} device-number={src[device]}",
                 tee,
-                "! queue",
-              ] + scope + [
+            ] + scope + [
                 textoverlay,
                 "! mix.sink_{index}",
             ]
             if device['monitor'] == True:
               spec = spec + [
                 teesrc,
-                " ! queue ",
                 " ! audioconvert ",
                 #" ! audioresample ",
                 " ! alsasink device=\"" + self.audio_monitor_device + "\""
@@ -342,9 +366,8 @@ class Capture(SimpleGSTGTKApp):
         elif device['src']['type'] == 'test':
             spec = [
               "videotestsrc is-live=true",
-                "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
+                "! {src[caps][filter]}, format=Y42B",
                 tee,
-                "! queue",
                 "! videoconvert",
                 "! videoscale",
                 "! video/x-raw, width={w}, height={h}",
@@ -357,13 +380,11 @@ class Capture(SimpleGSTGTKApp):
                 tee,
               ] + scope + [
                 textoverlay,
-                "! queue",
                 "! mix.sink_{index}",
             ]
             if device['monitor'] == True:
               spec = spec + [
                 teesrc,
-                " ! queue ",
                 " ! audioconvert ",
                 " ! audioresample ",
                 " ! alsasink blocksize=65536 latency-time=100000 device=\"" + self.audio_monitor_device  + "\""
@@ -374,13 +395,11 @@ class Capture(SimpleGSTGTKApp):
                 tee,
               ] + scope + [
                 textoverlay,
-                "! queue",
                 "! mix.sink_{index}",
             ]
             if device['monitor'] == True:
               spec = spec + [
                 teesrc,
-                " ! queue ",
                 " ! audioconvert ",
                 " ! pulsesink"
               ]

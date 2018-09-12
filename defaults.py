@@ -3,6 +3,9 @@ CARD_MODE="1080p30"
 USE_VAAPI=False
 FILE_PREFIX="./capture_"
 
+DEBUG=False
+AUDIO_MONITOR_DEVICE="sysdefault"
+
 INPUTS=[]
 
 LAYOUT=[]

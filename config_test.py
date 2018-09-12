@@ -1,10 +1,10 @@
 from defaults import *
 
-OUTPUT_MODE="1080p30"
-CARD_MODE="1080p30"
-FILE_PREFIX="/home/mark/egx/capture/capture_"
+OUTPUT_MODE="1080p2997"
+CARD_MODE="1080p2997"
+FILE_PREFIX="/home/mark/tmp/gutbuster/all_capture_"
 
-USE_VAAPI=True
+USE_VAAPI=False
 
 INPUTS=[
     {
