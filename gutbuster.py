@@ -21,7 +21,7 @@ def caps_from_mode( mode ):
     m = re.match( '(720|1080)(i|p)(2398|24|25|2997|30|50|5994|60)', mode )
     if m:
         height = int(m.group(1))
-        width = height/9*16
+        width = int(height/9*16)
         if m.group(2) == 'i':
             interlace = 'interleaved'
         else:
@@ -54,7 +54,7 @@ def lookup_layout(layout, inp):
     prev_w = 0
     prev_h = 0
     for l in layout:
-        if l.has_key('x'):
+        if 'x' in l:
             x = l['x']
             y = l['y']
         else:
@@ -71,7 +71,7 @@ def lookup_layout(layout, inp):
         prev_w = l['w']
         prev_h = l['h']
 
-class SimpleGSTGTKApp:
+class SimpleGSTGTKApp(object):
 
     def __init__(self):
         self.build_gui('main.ui')
@@ -83,7 +83,7 @@ class SimpleGSTGTKApp:
             win.is_fullscreen = not getattr(win, 'is_fullscreen', False)
             action = win.fullscreen if win.is_fullscreen else win.unfullscreen
             action()
-            self.builder.get_object('statusbar1').set_visible(not win.is_fullscreen)
+            self.builder.get_object('statusbar').set_visible(not win.is_fullscreen)
 
 
     def build_gui(self, interface_def):
@@ -92,8 +92,8 @@ class SimpleGSTGTKApp:
         self.window = self.builder.get_object("main")
         self.window.connect('destroy', self.quit)
         self.window.set_default_size(960, 540)
-        self.view = self.builder.get_object("view")
         self.window.show_all()
+        self.view = self.builder.get_object("multiview")
         # You need to get the XID after window.show_all().  You shouldn't get it
         # in the on_sync_message() handler because threading issues will cause
         # segfaults there.
@@ -270,8 +270,14 @@ class Capture(SimpleGSTGTKApp):
 
         self.pipeline = Gst.parse_launch( pipeline_spec )
 
+    def build_gui(self, interface_def):
+        super(Capture, self).build_gui(interface_def)
+        self.statusbar = self.builder.get_object('statusbar')
+        cid = self.statusbar.get_context_id("Current file")
+        self.statusbar.push(cid, "Hello y'all")
+
     def __init__(self, inputs, output_mode, layout, recordings, file_prefix, use_vaapi, audio_monitor_device):
-        self.build_gui('gutbuster.ui')
+        self.build_gui('main.ui')
         self.inputs = inputs
         self.output_mode = output_mode
         self.layout = layout
