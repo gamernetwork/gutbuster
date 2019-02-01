@@ -1,2 +1,4 @@
 attic/
 *.pyc
+config/
+*~
