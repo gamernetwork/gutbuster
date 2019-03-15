@@ -57,9 +57,9 @@ LAYOUT=[
     { "input": "3", "w": 480, "h": 270 },
 ]
 RECORDINGS=[
-    { "input": "mix", },
-    { "input": "0", },
-    { "input": "1", },
-    { "input": "2", },
-    { "input": "3", },
+#    { "input": "mix", },
+#    { "input": "0", },
+#    { "input": "1", },
+#    { "input": "2", },
+#    { "input": "3", },
 ]
