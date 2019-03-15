@@ -7,6 +7,8 @@ Video ingest and archive system for Blackmagic design capture cards.
 Example usage:
 
 ```
-./gutbuster.py --config=config_2997_rec
+python3 gutbuster.py --config=config_2997_rec
+# on wayland
+GDK_BACKEND=x11 python3 gutbuster.py --config=config_test --debug
 
 ```
