@@ -336,7 +336,7 @@ class Capture(SimpleGSTGTKApp):
                 teesrc,
                 " ! queue ",
                 " ! audioconvert ",
-                #" ! audioresample ",
+                " ! audioresample ",
                 " ! alsasink device=\"" + self.audio_monitor_device + "\""
               ]
         elif device['src']['type'] == 'test':

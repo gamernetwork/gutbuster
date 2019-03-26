@@ -4,7 +4,7 @@ CARD_MODE="1080p2997"
 DEBUG=True
 
 USE_VAAPI=True
-FILE_PREFIX="/media/mark/capture002/EGX/EGX2016/capture_"
+FILE_PREFIX="/media/mark/capture002/EGX/EGX2018/capture_"
 
 AUDIO_MONITOR_DEVICE="hw:CARD=USB,DEV=0"
 
@@ -15,7 +15,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "5",
+			"device": "4",
 			"mode": CARD_MODE,
 		},
 	},
@@ -25,7 +25,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "6",
+			"device": "5",
 			"mode": CARD_MODE,
 		},
 	},
@@ -35,7 +35,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "4",
+			"device": "6",
 			"mode": CARD_MODE,
 		},
 	},
@@ -80,7 +80,7 @@ INPUTS=[
 #	},
 	{
 		"name": "roomaudio",
-                "monitor": False,
+                "monitor": True,
 		"title": "ROOM",
 		"src": {
 			"type": "alsa",
@@ -100,6 +100,6 @@ LAYOUT=[
 	{ "input": "audience", "w": 480, "h": 270 },
 	#{ "input": "foo", "w": 480, "h": 270 },
 	{ "input": "playout", "w": 480, "h": 270 },
-	{ "input": "mixaudio", "w": 240, "h": 200, "x": 1440, "y": 0 },
-	{ "input": "roomaudio", "w": 240, "h": 200,},
+	{ "input": "mixaudio", "w": 480, "h": 405, "x": 1440, "y": 405 },
+	{ "input": "roomaudio", "w": 480, "h": 405, "x": 1440, "y": 0 },
 ]
