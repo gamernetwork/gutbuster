@@ -4,7 +4,9 @@ CARD_MODE="1080p2997"
 DEBUG=True
 
 USE_VAAPI=True
-FILE_PREFIX="/media/mark/CAPTURE001/EGX/EGX2017/capture_"
+FILE_PREFIX="/media/egx/CAPTURE003/Rezzed/rez19_capture_"
+
+AUDIO_MONITOR_DEVICE="hw:CARD=USB,DEV=0"
 
 INPUTS=[
 	{
@@ -13,7 +15,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "0",
+			"device": "5",
 			"mode": CARD_MODE,
 		},
 	},
@@ -23,7 +25,7 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "1",
+			"device": "6",
 			"mode": CARD_MODE,
 		},
 	},
@@ -33,18 +35,18 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "2",
+			"device": "4",
 			"mode": CARD_MODE,
 		},
 	},
 	{
-		"name": "playout",
-		"title": "PLAYOUT",
+		"name": "proj",
+		"title": "PROJ",
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "3",
-			"mode": "1080p2997",
+			"device": "7",
+			"mode": CARD_MODE,
 		},
 	},
 	{
@@ -53,53 +55,49 @@ INPUTS=[
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
-			"device": "7",
+			"device": "3",
 			"mode": "1080p2997",
 		},
 	},
 	{
 		"name": "mixaudio",
 		"title": "BROADCAST",
+                "monitor": False,
 		"src": {
 			"type": "decklinkaudiosrc",
 			"connection": "embedded",
-			"device": "7",
+			"device": "3",
 			"mode": "1080p2997",
 		},
 	},
-#	{
-#		"name": "test",
-#		"title": "TEST",
-#		"src": {
-#			"type": "test",
-#			"mode": "1080p2997",
-#		},
-#	},
 	{
 		"name": "roomaudio",
 		"title": "ROOM",
+                "monitor": False,
 		"src": {
 			"type": "alsa",
-			"device": "hw:CARD=USB",
+                        "device": "hw:CARD=USB,DEV=0",
 			"mode": "1080p2997",
 		},
 	},
 ]
 
 RECORDINGS=[
-    { "input": "mix", },
     { "input": "wide", },
     { "input": "head", },
-    { "input": "playout", },
+    { "input": "proj", },
+    { "input": "mix", },
+    { "input": "audience", },
+    { "input": "mixaudio", },
     { "input": "roomaudio", },
 ]
 
 LAYOUT=[
 	{ "input": "mix", "w": 1440, "h": 810, "x": 0, "y": 0 },
-	{ "input": "audience", "w": 480, "h": 270, "x": 0, "y": 810 },
-	{ "input": "head", "w": 480, "h": 270 },
+	{ "input": "head", "w": 480, "h": 270,"x": 0, "y": 810  },
 	{ "input": "wide", "w": 480, "h": 270 },
-	{ "input": "playout", "w": 480, "h": 270 },
+	{ "input": "audience", "w": 480, "h": 270 },
+	{ "input": "proj", "w": 480, "h": 270 },
 	{ "input": "roomaudio", "w": 480, "h": 405, "x": 1440, "y": 405 },
 	{ "input": "mixaudio", "w": 480, "h": 405, "x": 1440, "y": 0 },
 ]
