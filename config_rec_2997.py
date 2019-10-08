@@ -4,7 +4,7 @@ CARD_MODE="1080p2997"
 DEBUG=True
 
 USE_VAAPI=True
-FILE_PREFIX="/media/egx/CAPTURE001/EGX/EGX2018/capture_"
+FILE_PREFIX="/media/egx/CAPTURE003/Rezzed/rez19_capture_"
 
 AUDIO_MONITOR_DEVICE="hw:CARD=USB,DEV=0"
 
@@ -73,7 +73,7 @@ INPUTS=[
 	{
 		"name": "roomaudio",
 		"title": "ROOM",
-                "monitor": True,
+                "monitor": False,
 		"src": {
 			"type": "alsa",
                         "device": "hw:CARD=USB,DEV=0",

@@ -177,7 +177,7 @@ class Capture(SimpleGSTGTKApp):
                 enc = [
                   "vaapipostproc scale-method=hq",
                   "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
-                  "! vaapih264enc init-qp=18 quality-level=1 keyframe-period=120",
+                  "! vaapih264enc init-qp=22 quality-level=1 keyframe-period=120",
                   #"! vaapih264enc init-qp=18 quality-level=1 keyframe-period=120",
                   #"! vaapih265enc keyframe-period=120",
                 ]
