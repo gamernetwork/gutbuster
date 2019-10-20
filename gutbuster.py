@@ -172,10 +172,12 @@ class Capture(SimpleGSTGTKApp):
         vals = self.get_input(inputname)
         vals['index'] = datetime.datetime.now().strftime('%a_%H.%M.%S')
         vals['file_prefix'] = self.file_prefix + vals['index']
+        if not 'denoise' in vals:
+            vals['denoise'] = 0
         if vals['src']['type'] == 'decklinkvideosrc':
             if self.use_vaapi:
                 enc = [
-                  "vaapipostproc scale-method=hq",
+                  "vaapipostproc scale-method=hq denoise={denoise} skin-tone-enhancement=true",
                   "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
                   "! vaapih264enc init-qp=22 quality-level=1 keyframe-period=120",
                   #"! vaapih264enc init-qp=18 quality-level=1 keyframe-period=120",
@@ -314,6 +316,8 @@ class Capture(SimpleGSTGTKApp):
             spec = [
               "decklinkvideosrc timecode-format=6 do-timestamp=true mode={src[mode]} buffer-size=3 connection={src[connection]} device-number={src[device]}",
                 "! video/x-raw, width={src[caps][width]}, height={src[caps][height]}",
+                "! videoconvert",
+                "! video/x-raw, width={src[caps][width]}, format=I420, height={src[caps][height]}",
                 tee,
                 "! queue",
                 "! videoconvert",

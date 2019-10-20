@@ -22,6 +22,7 @@ INPUTS=[
 	{
 		"name": "audience",
 		"title": "AUDIENCE",
+                "denoise": 0.1,
 		"src": {
 			"type": "decklinkvideosrc",
 			"connection": "sdi",
