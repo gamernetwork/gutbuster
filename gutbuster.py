@@ -170,7 +170,7 @@ class Capture(SimpleGSTGTKApp):
 
     def record_input(self, inputname):
         vals = self.get_input(inputname)
-        vals['index'] = datetime.datetime.now().strftime('%a_%H:%M.%S')
+        vals['index'] = datetime.datetime.now().strftime('%a_%H.%M.%S')
         vals['file_prefix'] = self.file_prefix + vals['index']
         if vals['src']['type'] == 'decklinkvideosrc':
             if self.use_vaapi:
